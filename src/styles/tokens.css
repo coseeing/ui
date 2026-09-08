@@ -1,0 +1,122 @@
+/* Coseeing design tokens — Tailwind v4 @theme.
+ *
+ * Every value here is sourced from the Figma "Brand" file. Declaring them in
+ * @theme (rather than plain :root) is what makes Tailwind generate the matching
+ * utilities: --color-teal-PRIMARY becomes bg-teal-PRIMARY / text-teal-PRIMARY,
+ * --spacing-36 becomes px-36, --text-5xl becomes text-5xl, and so on. The
+ * components in this package are written against those utility names, so a
+ * consumer that skips this file gets unstyled markup.
+ *
+ * Scale note: sizes are expressed in rem against a 10px root (see base.css,
+ * which sets html { font-size: 62.5% }). --spacing-36 = 3.6rem = 36px. If you
+ * import tokens.css without base.css you must set that root size yourself, or
+ * every spacing and type step renders 1.6x too large.
+ */
+
+@theme {
+  --breakpoint-mobile: 375px;
+  --breakpoint-tablet: 768px;
+  --breakpoint-desktop: 1280px;
+
+  --color-teal-100: #718a92;
+  --color-teal-200: #566f79;
+  --color-teal-300: #3a5961;
+  --color-teal-PRIMARY: #1f4147;
+  --color-teal-500: #1a373e;
+  --color-teal-600: #152d34;
+  --color-teal-700: #10242a;
+  --color-orange-100: #ffe099;
+  --color-orange-200: #ffcd66;
+  --color-orange-300: #ffb933;
+  --color-orange-PRIMARY: #fea400;
+  --color-orange-500: #e68f00;
+  --color-orange-600: #cc7a00;
+  --color-orange-700: #b26600;
+  --color-bg-light-off-white: #f6f7f1;
+  --color-bg-light-beige: #eee6d8;
+  --color-bg-warm-gray: #dad5c2;
+  --color-neutral-white: #ffffff;
+  --color-neutral-very-light-gray: #f2f2f2;
+  --color-neutral-light-gray: #e0e0e0;
+  --color-neutral-beige-gray: #ccc8b8;
+  --color-neutral-medium-gray: #b0b0b0;
+  --color-neutral-dark-gray: #707070;
+  --color-neutral-black: #000000;
+  --color-red-100: #f7bab1;
+  --color-red-200: #f1958a;
+  --color-red-300: #ec7163;
+  --color-red-PRIMARY: #e74c3c;
+  --color-red-500: #ca4336;
+  --color-red-600: #ad3a30;
+  --color-red-700: #902d2a;
+  --color-blue-100: #add6f7;
+  --color-blue-200: #8dc4f0;
+  --color-blue-300: #6caae9;
+  --color-blue-PRIMARY: #4a90e2;
+  --color-blue-500: #407fcc;
+  --color-blue-600: #366fb6;
+  --color-blue-700: #2c5fa0;
+  --color-green-100: #cbe8a3;
+  --color-green-200: #b1da7d;
+  --color-green-300: #97cc57;
+  --color-green-PRIMARY: #7dbe31;
+  --color-green-500: #6aa62a;
+  --color-green-600: #579d23;
+  --color-green-700: #46851d;
+  /* Extends the Figma ramp, which stops at 700. green-700 clears 4.5:1 only on
+     pure white (4.53); on the actual page background it is 4.21 and on beige
+     3.66, so success *text* set in it failed WCAG AA everywhere but inside a
+     Card. This is the lightest green that passes on all three brand surfaces
+     — white 5.98, off-white 5.55, beige 4.83. Use it for green text; the
+     700 step is still the right choice for fills and borders. */
+  --color-green-800: #3a7018;
+
+  --spacing-1: 0.1rem;
+  --spacing-4: 0.4rem;
+  --spacing-6: 0.6rem;
+  --spacing-8: 0.8rem;
+  --spacing-12: 1.2rem;
+  --spacing-16: 1.6rem;
+  --spacing-20: 2rem;
+  --spacing-24: 2.4rem;
+  --spacing-28: 2.8rem;
+  --spacing-32: 3.2rem;
+  --spacing-36: 3.6rem;
+  --spacing-40: 4rem;
+  --spacing-48: 4.8rem;
+  --spacing-58: 5.8rem;
+  --spacing-60: 6rem;
+  --spacing-64: 6.4rem;
+  --spacing-80: 8rem;
+  --spacing-88: 8.8rem;
+  --spacing-120: 12rem;
+
+  --text-xss: 1rem;
+  --text-xs: 1.2rem;
+  --text-sm: 1.4rem;
+  --text-base: 1.6rem;
+  --text-lg: 1.8rem;
+  --text-xl: 2rem;
+  --text-2xl: 2.2rem;
+  --text-3xl: 2.4rem;
+  --text-4xl: 2.8rem;
+  --text-5xl: 3rem;
+  --text-6xl: 3.2rem;
+  --text-7xl: 3.6rem;
+  --text-8xl: 4rem;
+  --text-9xl: 4.8rem;
+  --text-10xl: 5.2rem;
+  --text-11xl: 6.4rem;
+
+  --radius-8: 0.8rem;
+  --radius-16: 1.6rem;
+  --radius-18: 1.8rem;
+  --radius-24: 2.4rem;
+  --radius-32: 3.2rem;
+
+  /* This package does not load webfonts — it only names them. Ship "Noto Sans
+     TC" (and Inter, if you want the display face) from the consuming app, e.g.
+     next/font, or the stack falls through to the system sans-serif. */
+  --font-inter: ui-sans-serif, system-ui, sans-serif;
+  --font-noto: "Noto Sans TC", ui-sans-serif, system-ui, sans-serif;
+}

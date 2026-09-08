@@ -1,0 +1,38 @@
+/* Global element defaults.
+ *
+ * Opinionated and page-wide on purpose, which is why it is a separate import:
+ * a consumer embedding a few components inside a host app that already owns
+ * html/body can take tokens.css + typography.css and skip this.
+ *
+ * The one rule you cannot skip is html { font-size: 62.5% }. The whole token
+ * scale is rem-against-a-10px-root, so without it every spacing step and type
+ * size renders 1.6x too large. If you drop base.css, set that yourself.
+ */
+
+@layer base {
+  html {
+    font-size: 62.5%;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply min-h-screen text-teal-700 antialiased;
+    margin: 0;
+    background-color: var(--color-bg-light-off-white);
+    font-family: var(--font-noto);
+  }
+
+  a {
+    @apply text-teal-PRIMARY underline-offset-4;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+}

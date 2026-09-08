@@ -1,0 +1,18 @@
+/* Consumption path B: this app runs Tailwind v4 itself.
+ *
+ * Importing theme.css registers the brand tokens and typography classes in
+ * THIS app's Tailwind build, which means:
+ *   - the library's components get the utilities they reference, and
+ *   - app markup can use bg-teal-PRIMARY / px-36 / typography-headline2 too,
+ * all emitted once into a single stylesheet.
+ *
+ * theme.css carries its own `@source "./"`, so Tailwind also scans
+ * node_modules/@coseeing/ui/dist for class names. Without that, every utility
+ * used only inside a component would be tree-shaken away.
+ *
+ * Do NOT also import "@coseeing/ui/styles.css" — that is path A, the prebuilt
+ * stylesheet for non-Tailwind apps, and the two would duplicate each other.
+ */
+
+@import "tailwindcss";
+@import "@coseeing/ui/theme.css";

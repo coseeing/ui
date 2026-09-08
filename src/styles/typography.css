@@ -1,0 +1,88 @@
+/* Typography scale — the named text styles from the Figma "Brand" file.
+ *
+ * Components reference these as plain classes (typography-strong1 on Button,
+ * typography-body1 on Input, …), so this file is required by every component in
+ * the package, not just by consumers who want to use the classes directly.
+ *
+ * Each style bakes in its own responsive steps against the tablet/desktop
+ * breakpoint tokens, so a caller applies one class and gets the whole ramp.
+ */
+
+@layer components {
+  .typography-display1 {
+    @apply text-7xl tablet:text-10xl desktop:text-11xl font-bold leading-[1.5] tracking-[0.1em];
+    font-family: var(--font-inter);
+  }
+
+  .typography-display2,
+  .typography-headline1 {
+    @apply text-6xl tablet:text-8xl desktop:text-9xl font-bold leading-[1.5] tracking-[0.1em];
+    font-family: var(--font-inter);
+  }
+
+  .typography-headline2 {
+    @apply text-4xl tablet:text-5xl desktop:text-6xl font-bold leading-[1.5] tracking-[0.1em];
+    font-family: var(--font-inter);
+  }
+
+  .typography-headline3 {
+    @apply text-2xl tablet:text-3xl font-bold leading-[1.5] tracking-[0.1em];
+    font-family: var(--font-inter);
+  }
+
+  .typography-headline4 {
+    @apply text-lg tablet:text-xl font-bold leading-[1.5] tracking-[0.1em];
+    font-family: var(--font-inter);
+  }
+
+  .typography-feature1 {
+    @apply text-4xl tablet:text-5xl desktop:text-6xl font-medium leading-[1.5] tracking-[0.1em];
+    font-family: var(--font-inter);
+  }
+
+  .typography-feature2 {
+    @apply text-2xl tablet:text-3xl font-medium leading-[1.5] tracking-[0.1em];
+    font-family: var(--font-inter);
+  }
+
+  .typography-feature3 {
+    @apply text-lg tablet:text-xl font-medium leading-[1.5] tracking-[0.1em];
+    font-family: var(--font-inter);
+  }
+
+  .typography-strong1 {
+    @apply text-sm desktop:text-base font-bold leading-[1.5] tracking-[0.1em];
+  }
+
+  .typography-strong2 {
+    @apply text-xs desktop:text-sm font-bold leading-[1.5] tracking-[0.1em];
+  }
+
+  .typography-strong3 {
+    @apply text-xss desktop:text-xs font-bold leading-[1.5] tracking-[0.1em];
+  }
+
+  .typography-emphasised1 {
+    @apply text-sm desktop:text-base font-medium leading-[1.5] tracking-[0.1em];
+  }
+
+  .typography-emphasised2 {
+    @apply text-xs desktop:text-sm font-medium leading-[1.5] tracking-[0.1em];
+  }
+
+  .typography-emphasised3 {
+    @apply text-xss desktop:text-xs font-medium leading-[1.5] tracking-[0.1em];
+  }
+
+  .typography-body1 {
+    @apply text-sm desktop:text-base font-normal leading-[1.5] tracking-[0.1em];
+  }
+
+  .typography-body2 {
+    @apply text-xs desktop:text-sm font-normal leading-[1.5] tracking-[0.1em];
+  }
+
+  .typography-body3 {
+    @apply text-xss desktop:text-xs font-normal leading-[1.5] tracking-[0.1em];
+  }
+}

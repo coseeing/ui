@@ -1,0 +1,29 @@
+/* Consumer entry for apps that already run Tailwind v4.
+ *
+ *   /* app/globals.css *\/
+ *   @import "tailwindcss";
+ *   @import "@coseeing/ui/theme.css";
+ *
+ * That registers the brand tokens and typography classes in the app's own
+ * Tailwind build, so `bg-teal-PRIMARY`, `px-36`, and `typography-strong1` work
+ * in the app's markup as well as in this package's components — one Tailwind
+ * pass, one stylesheet, no duplicated utilities.
+ *
+ * Apps that do NOT use Tailwind should import the prebuilt
+ * `@coseeing/ui/styles.css` instead. Do not import both.
+ *
+ * NOTE: this file is only ever consumed from `dist/`, where the @source path
+ * below resolves to the package's compiled JS. The in-repo Tailwind build uses
+ * `index.css`, which imports the same three partials with its own @source.
+ */
+
+@import "./tokens.css";
+@import "./base.css";
+@import "./typography.css";
+
+/* Tell the consumer's Tailwind to scan this package's compiled components for
+ * class names. Without it Tailwind only sees the app's own source, so every
+ * utility used exclusively inside a Coseeing component gets tree-shaken away
+ * and the components render unstyled. Resolved relative to this file, i.e.
+ * node_modules/@coseeing/ui/dist. */
+@source "./";

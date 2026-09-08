@@ -1,0 +1,21 @@
+/* Build entry for the prebuilt, self-contained stylesheet.
+ *
+ * `npm run build:css` compiles this to `dist/styles.css`: Tailwind preflight,
+ * the brand tokens, the typography classes, and every utility any component in
+ * this package actually uses. That is the drop-in path for consumers with no
+ * Tailwind of their own — one `import "@coseeing/ui/styles.css"` and done.
+ *
+ * Apps that run Tailwind v4 themselves should import `theme.css` instead, so
+ * their build emits a single deduplicated stylesheet.
+ */
+
+@import "tailwindcss";
+
+@import "./tokens.css";
+@import "./base.css";
+@import "./typography.css";
+
+/* Scan the component sources so their utilities survive into dist/styles.css.
+ * Paths are relative to this file. */
+@source "../components";
+@source "../lib";
