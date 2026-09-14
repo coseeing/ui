@@ -37,10 +37,25 @@ take what they need as props.
 
 ## Consuming it
 
+### Install Coseeing Github Packages
+
+To install the coseeing packages, please refer to [Github Doc](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry#authenticating-to-github-packages).
+
+In short: the app needs an `.npmrc` pointing the `@coseeing` scope at the
+GitHub registry, plus a personal access token with `read:packages`.
+
+```
+@coseeing:registry=https://npm.pkg.github.com
+```
+
+Then `npm install @coseeing/ui`.
+
+### Styling
+
 Two independent styling paths. **Pick one** — importing both duplicates every
 utility.
 
-### Path A — the app does not use Tailwind
+#### Path A — the app does not use Tailwind
 
 ```ts
 import "@coseeing/ui/styles.css"       // once, at the app root
@@ -51,7 +66,7 @@ import { Button, Card } from "@coseeing/ui"
 tokens, the typography classes, and every utility the components use. Nothing
 to configure.
 
-### Path B — the app already runs Tailwind v4 (recommended)
+#### Path B — the app already runs Tailwind v4 (recommended)
 
 ```css
 /* app/globals.css */
@@ -167,6 +182,40 @@ npm run build          # js -> types -> css, into dist/
    classes, the root font-size, and at least one utility that only exists inside
    a component; that last check is what catches a silently mis-scoped `@source`,
    whose only other symptom is unstyled components far downstream.
+
+## Publishing
+
+The package goes to GitHub Packages as `@coseeing/ui`, via the **Publish
+package to GitHub Packages** workflow (`.github/workflows/publish.yml`). It is
+`workflow_dispatch` only — nothing publishes on a push or a merge.
+
+1. Bump the version on `main`:
+
+   ```sh
+   npm version patch    # or minor / major
+   ```
+
+   `npm version` writes `package.json`, commits, and tags. Push both:
+
+   ```sh
+   git push && git push --tags
+   ```
+
+2. Actions → **Publish package to GitHub Packages** → **Run workflow**.
+
+The workflow installs, installs Chromium, then runs `typecheck`, `test`, and
+`build` before `npm publish`. A failure in any of those stops the run, so a
+broken build never reaches the registry. Auth is the workflow's own
+`GITHUB_TOKEN` — there is no separate secret to rotate.
+
+**A version can only be published once.** Re-running the workflow without a
+bump fails at `npm publish` with a 409, and GitHub Packages does not allow
+overwriting or re-using a version after a delete. Always bump first.
+
+`npm publish` runs `prepack`, which runs `npm run build` — so `dist/` is always
+rebuilt from the checked-out source at publish time and never taken from a
+local working tree. `files: ["dist"]` is what keeps `src/`, stories, and configs
+out of the tarball; `npm publish --dry-run` prints the exact file list.
 
 ## Testing
 
