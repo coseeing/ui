@@ -1,0 +1,36 @@
+name: Publish package to GitHub Packages
+
+on: workflow_dispatch
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@coseeing'
+
+      - run: npm ci
+
+      # The test suite runs the stories in real Chromium (see vitest.config.ts).
+      - run: npx playwright install --with-deps chromium
+
+      - run: npm run typecheck
+
+      - run: npm test
+
+      # `npm publish` runs prepack, which builds — this is a pre-flight check so
+      # a broken build fails before anything is pushed to the registry.
+      - run: npm run build
+
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

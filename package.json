@@ -3,6 +3,13 @@
   "version": "0.1.0",
   "description": "Coseeing brand design system — React primitives and Tailwind v4 design tokens.",
   "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/coseeing/ui.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "type": "module",
   "sideEffects": [
     "*.css"
