@@ -1,8 +1,7 @@
 # @coseeing/ui
 
 Coseeing brand design system: React primitives plus the Tailwind v4 design
-tokens they are built on. Extracted from `SSO/center/components` so the same
-components can be used outside the SSO app.
+tokens they are built on.
 
 ```
 src/
@@ -243,37 +242,3 @@ the directive is meaningless. It still matters in `dist/`, which is not bundled.
 Relative imports in `src/` carry explicit `.js` extensions. That is what makes
 the `bundle: false` output valid Node ESM; TypeScript resolves them back to the
 `.ts`/`.tsx` sources.
-
-## What deliberately stayed in the SSO app
-
-The split follows the dependency graph rather than a judgement call about which
-components feel "reusable". Anything that imported `@ory/*`, `next/*`, or an app
-route stayed behind:
-
-- `AuthPage`, `FlowForm/*`, `EmailVerification/*` — Ory flow logic
-  (`@ory/client-fetch`, `@ory/elements-react`).
-- `SiteNav`, `Nav`, `Footer`, `MainSiteFooter` — site chrome bound to
-  `/center` routes, brand assets in `public/`, and `app/logout/actions`.
-- `CoseeingIdentityCard`, `Toast/ToastNotice` — bound to Ory identity shapes
-  and the app's `toast-flags` cookie protocol.
-- `PageHeader`, `FilterPills`, `CarouselControls`, `SettingsTabs`, and the
-  composite cards (`EventCard`, `MemberCard`, `ProjectCard`, `ReportCard`,
-  `ThumbnailCard`, `UpcomingEventItem`) — no hard coupling, held back as
-  product-specific for now. These are the natural next candidates; the
-  composite cards need only `Button`, `Icons`, and `Tag`, all of which this
-  package exports.
-
-Two changes were needed to break the coupling on what did move:
-
-- **`Link`** imported `next/navigation` and a hard-coded `/center`. It is now a
-  plain `<a>` with optional `as` and `current` props, so the caller supplies
-  both. `Button` inherits this, since it renders a `Link` when given an `href`.
-  The SSO app keeps its existing `lib/app-path.ts` and wraps `Link` once for
-  `usePathname()` — nothing new to install.
-- **`Dialog`** had `aria-label="關閉"` baked in. Now a `closeLabel` prop with
-  the same default.
-
-The app-only CSS from `center/app/globals.css` — the `.ory-elements` overrides,
-`.auth-shell`, `.auth-column`, `.auth-title`, `.utility-nav` — was left in the
-app. `globals.css` there becomes `@import "tailwindcss"`, the Ory theme import,
-`@import "@coseeing/ui/theme.css"`, and those app-specific blocks.
