@@ -18,20 +18,20 @@ src/
 
 ## What's in it
 
-20 primitives, all framework-agnostic:
+21 primitives, all framework-agnostic:
 
 | Group | Components |
 | --- | --- |
 | Layout | `Container`, `Card` |
 | Actions & nav | `Button`, `Link`, `Pagination` |
-| Form | `Field`, `Label`, `ValidationMessage`, `Input`, `Textarea`, `Checkbox`, `Select`, `Combobox`, `MultiCombobox` |
+| Form | `Field`, `Label`, `ValidationMessage`, `Input`, `Textarea`, `Checkbox`, `Select`, `FileUpload`, `Combobox`, `MultiCombobox` |
 | Data | `Badge`, `Tag`, `Table` |
 | Disclosure & feedback | `Accordion`, `Tabs`, `Dialog`, `Toast` |
 | Icons | 13 brand icons from `Icons` |
 
 Also exported: `cn`, and the `LinkProps` / `AnchorLike` / `TableColumn` /
 `TabItem` / `AccordionEntry` / `ComboboxOption` / `ComboboxLabels` /
-`ComboboxProps` / `MultiComboboxProps` / `PaginationLabels` types.
+`ComboboxProps` / `MultiComboboxProps` / `PaginationLabels` / `FileUploadLabels` types.
 
 There is no provider to mount and nothing to configure globally. Components
 take what they need as props.
@@ -153,6 +153,37 @@ The `Input` shell, multi-line. `invalid` sets `aria-invalid`; `rows`
 content`, so `Textarea` stays a Server Component. Browsers without
 `field-sizing` (Firefox, at the time of writing) keep the fixed `rows` height
 and the manual resize handle.
+
+### FileUpload
+
+```tsx
+const [cover, setCover] = useState<File | string | null>(existingUrl)
+
+<Field label="封面圖片" htmlFor="cover">
+  <FileUpload
+    id="cover"
+    accept="image/*"
+    preview
+    value={cover}               // a new File, an existing URL, or null
+    onChange={setCover}
+    onRemove={() => setCover(null)}
+  />
+</Field>
+```
+
+- The control is a real `<button>`; the `<input type="file">` behind it has
+  `tabIndex={-1}` and `aria-hidden`. Paired with a `<label>`, the button's name
+  keeps both: 「封面圖片，選擇圖片」.
+- The input is reset after every pick, so choosing the same file twice still
+  fires `onChange`.
+- The chosen file name, removal, and errors are announced through a live
+  region that is always mounted. Removing hands focus back to the trigger.
+- A URL that fails to load shows 「圖片無法載入」 — the value is still set, so
+  the name and actions stay rather than falling back to 「未設定」.
+- Drag and drop is a shortcut, never the only way. Dropped files are checked
+  against `accept`, since only the picker enforces it natively.
+- Strings are in `labels`; set `choose`/`remove` to 「選擇檔案」/「刪除檔案」
+  for non-image uploads.
 
 ### Pagination
 
@@ -353,6 +384,10 @@ What the story tests actually pin down, beyond "it renders":
   pre-selection, ↑/↓ wrap, Home/End, double Esc, Enter ignored during IME
   composition, create, multi toggle, focus after removing an item, and the
   persistent result-count live region.
+- **FileUpload** — the trigger is a named `<button>` and the native input is
+  hidden from the tab order and a11y tree; re-selecting twice (including the
+  same file); an existing URL shows preview and 刪除; a broken image shows an
+  error, not 未設定; focus after removing; drop, and drop outside `accept`.
 - **Pagination** — landmark name, `aria-current`, real `disabled` at both
   ends, focus handed to the current page on reaching an end, the live status
   line, ellipsis slots at the start / middle / end, and link mode with `as`.

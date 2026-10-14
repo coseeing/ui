@@ -29,6 +29,8 @@ export { Input } from "./components/Input/Input.js"
 export { Textarea } from "./components/Textarea/Textarea.js"
 export { Checkbox } from "./components/Checkbox/Checkbox.js"
 export { Select } from "./components/Select/Select.js"
+export { FileUpload } from "./components/FileUpload/FileUpload.js"
+export type { FileUploadLabels } from "./components/FileUpload/FileUpload.js"
 export { Combobox, MultiCombobox } from "./components/Combobox/Combobox.js"
 export type {
   ComboboxOption,

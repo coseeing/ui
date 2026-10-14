@@ -1,0 +1,291 @@
+"use client"
+
+import { useEffect, useId, useRef, useState } from "react"
+import { cn } from "../../lib/cn.js"
+import { PlusIcon } from "../Icons/Icons.js"
+
+// FileUpload — design-system extension (not in Figma). A preview tile beside
+// the file name and actions, in the Input shell's language (rounded-8,
+// warm-gray border, white field); the actions are Small GreenStroke buttons.
+//
+// The control is a real <button>. The <input type="file"> it drives is kept
+// out of the tab order and the accessibility tree — a native file input's
+// built-in button cannot be styled or renamed, and would otherwise be a
+// second, unlabelled stop next to ours.
+//
+// The trigger stays the same element in every state (選擇圖片 ↔ 重新選取), so
+// removing the file can hand focus straight back to it.
+
+export type FileUploadLabels = {
+  choose: string
+  replace: string
+  remove: string
+  /** Shown in place of a file name when there is no value. */
+  empty: string
+  /** Name for a value that is a URL without a usable file name. */
+  current: string
+  dropHint: string
+  /** Announced after a file is chosen or dropped. */
+  selected: (name: string) => string
+  /** Announced after the file is removed. */
+  removed: string
+  /** Shown and announced when the preview image fails to load. */
+  loadError: string
+  /** Shown and announced when a dropped file does not match `accept`. */
+  wrongType: string
+  previewAlt: (name: string) => string
+}
+
+const DEFAULT_LABELS: FileUploadLabels = {
+  choose: "選擇圖片",
+  replace: "重新選取",
+  remove: "刪除圖片",
+  empty: "未設定",
+  current: "目前的圖片",
+  dropHint: "或將檔案拖曳到這裡",
+  selected: (name) => `已選擇 ${name}`,
+  removed: "已刪除",
+  loadError: "圖片無法載入",
+  wrongType: "不支援這個檔案類型",
+  previewAlt: (name) => `預覽：${name}`,
+}
+
+type FileUploadProps = {
+  /** id of the trigger button — pair it with `<Field htmlFor>`. */
+  id?: string
+  /** As on <input type="file">; also enforced for dropped files. */
+  accept?: string
+  /** A newly chosen File, the URL of an existing file, or nothing. */
+  value: File | string | null
+  onChange: (file: File) => void
+  /** Omit to hide the remove action. */
+  onRemove?: () => void
+  /** Show an image preview. */
+  preview?: boolean
+  invalid?: boolean
+  disabled?: boolean
+  "aria-describedby"?: string
+  labels?: Partial<FileUploadLabels>
+  className?: string
+}
+
+const buttonStyles =
+  "typography-strong2 inline-flex cursor-pointer items-center justify-center gap-4 rounded-8 border-0 bg-transparent px-16 py-8 text-teal-PRIMARY ring-1 ring-inset ring-teal-PRIMARY transition-colors hover:bg-neutral-beige-gray focus-visible:bg-neutral-beige-gray focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-PRIMARY disabled:cursor-not-allowed disabled:opacity-50"
+
+/** The display name of a value: a File's own name, or a URL's last segment. */
+function nameOf(value: File | string): string | undefined {
+  if (typeof value !== "string") return value.name
+  if (/^(data|blob):/.test(value)) return undefined
+  const segment = value.split(/[?#]/)[0]!.split("/").pop()
+  if (!segment) return undefined
+  try {
+    return decodeURIComponent(segment)
+  } catch {
+    return segment
+  }
+}
+
+/** The `accept` attribute's matching rules, for drops (the picker does its own). */
+function accepts(file: File, accept?: string) {
+  if (!accept) return true
+  const name = file.name.toLowerCase()
+  const type = file.type.toLowerCase()
+  return accept
+    .split(",")
+    .map((rule) => rule.trim().toLowerCase())
+    .some((rule) =>
+      rule.startsWith(".")
+        ? name.endsWith(rule)
+        : rule.endsWith("/*")
+          ? type.startsWith(rule.slice(0, -1))
+          : type === rule,
+    )
+}
+
+export function FileUpload({
+  id,
+  accept,
+  value,
+  onChange,
+  onRemove,
+  preview,
+  invalid,
+  disabled,
+  "aria-describedby": ariaDescribedBy,
+  labels,
+  className,
+}: FileUploadProps) {
+  const l = { ...DEFAULT_LABELS, ...labels }
+  const generatedId = useId()
+  const triggerId = id ?? generatedId
+  const errorId = `${triggerId}-error`
+  const inputRef = useRef<HTMLInputElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+
+  // Announcements happen only in response to the user, never on mount.
+  const [notice, setNotice] = useState<{ text: string; n: number } | null>(null)
+  const say = (text: string) => setNotice((prev) => ({ text, n: (prev?.n ?? 0) + 1 }))
+
+  const [dragging, setDragging] = useState(false)
+  const [rejected, setRejected] = useState(false)
+
+  // A File previews through an object URL, revoked when it is replaced.
+  const [objectUrl, setObjectUrl] = useState<string>()
+  useEffect(() => {
+    if (!(value instanceof File) || !value.type.startsWith("image/")) {
+      setObjectUrl(undefined)
+      return
+    }
+    const url = URL.createObjectURL(value)
+    setObjectUrl(url)
+    return () => URL.revokeObjectURL(url)
+  }, [value])
+  const src = typeof value === "string" ? value : objectUrl
+
+  // Keyed on the src that failed, so a new value clears the error by itself.
+  const [failedSrc, setFailedSrc] = useState<string>()
+  const loadFailed = !!src && failedSrc === src
+
+  // The <label> text, if the trigger is paired with one (e.g. via Field). It
+  // is folded into the button's name so the name says both what the field is
+  // and what the button does — "封面圖片，選擇圖片" — instead of the label
+  // replacing the action, which is what <label for> on a button does.
+  const [labelText, setLabelText] = useState<string>()
+  useEffect(() => {
+    setLabelText(triggerRef.current?.labels?.[0]?.textContent ?? undefined)
+  }, [])
+
+  const hasValue = value !== null && value !== ""
+  const name = hasValue ? (nameOf(value) ?? l.current) : undefined
+  const triggerText = hasValue ? l.replace : l.choose
+  const error = loadFailed ? l.loadError : rejected ? l.wrongType : undefined
+
+  const take = (file: File | undefined) => {
+    if (!file) return
+    if (!accepts(file, accept)) {
+      setRejected(true)
+      say(l.wrongType)
+      return
+    }
+    setRejected(false)
+    onChange(file)
+    say(l.selected(file.name))
+  }
+
+  return (
+    <div
+      className={cn(
+        "flex flex-wrap items-center gap-16 rounded-8 border border-bg-warm-gray bg-neutral-white p-16 transition-colors",
+        invalid && "border-red-PRIMARY",
+        dragging && "border-teal-PRIMARY bg-bg-light-off-white",
+        className,
+      )}
+      // Drop is a shortcut; the button does everything drop does.
+      onDragOver={(e) => {
+        if (disabled) return
+        e.preventDefault()
+        setDragging(true)
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false)
+      }}
+      onDrop={(e) => {
+        if (disabled) return
+        e.preventDefault()
+        setDragging(false)
+        take(e.dataTransfer?.files?.[0])
+      }}
+    >
+      {preview ? (
+        <div className="flex size-88 shrink-0 items-center justify-center overflow-hidden rounded-8 border border-dashed border-bg-warm-gray bg-bg-light-off-white text-teal-100">
+          {src && !loadFailed ? (
+            <img
+              src={src}
+              alt={l.previewAlt(name ?? l.current)}
+              onError={() => setFailedSrc(src)}
+              className="size-full object-cover"
+            />
+          ) : hasValue ? null : (
+            // Placeholder only when empty: over a failed image it would read
+            // as "add", while the value is in fact still set.
+            <PlusIcon />
+          )}
+        </div>
+      ) : null}
+
+      <div className="grid min-w-0 flex-1 gap-8">
+        <p
+          className={cn(
+            "typography-body2 m-0 truncate",
+            hasValue ? "text-teal-700" : "text-neutral-dark-gray",
+          )}
+        >
+          {name ?? l.empty}
+        </p>
+        {error ? (
+          <p id={errorId} className="typography-body2 m-0 text-red-600">
+            {error}
+          </p>
+        ) : null}
+        <div className="flex flex-wrap gap-8">
+          <button
+            ref={triggerRef}
+            id={triggerId}
+            type="button"
+            disabled={disabled}
+            aria-label={labelText ? `${labelText}，${triggerText}` : undefined}
+            aria-describedby={
+              [error ? errorId : undefined, ariaDescribedBy].filter(Boolean).join(" ") ||
+              undefined
+            }
+            onClick={() => inputRef.current?.click()}
+            className={buttonStyles}
+          >
+            {triggerText}
+          </button>
+          {hasValue && onRemove ? (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => {
+                setRejected(false)
+                onRemove()
+                say(l.removed)
+                // The remove button is about to unmount; the trigger is not.
+                triggerRef.current?.focus()
+              }}
+              className={buttonStyles}
+            >
+              {l.remove}
+            </button>
+          ) : null}
+        </div>
+        {!hasValue && !disabled ? (
+          <p className="typography-body2 m-0 text-neutral-dark-gray">{l.dropHint}</p>
+        ) : null}
+      </div>
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept={accept}
+        tabIndex={-1}
+        aria-hidden="true"
+        disabled={disabled}
+        className="sr-only"
+        onChange={(e) => {
+          take(e.target.files?.[0])
+          // Without this, choosing the same file again fires no change event,
+          // so "re-select" silently does nothing the second time.
+          e.target.value = ""
+        }}
+      />
+
+      {/* Always mounted; see Field for why the region must predate its text. */}
+      <div role="status" className="sr-only">
+        {notice ? <span key={notice.n}>{notice.text}</span> : null}
+        {loadFailed ? <span>{l.loadError}</span> : null}
+      </div>
+    </div>
+  )
+}
