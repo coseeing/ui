@@ -32,6 +32,13 @@
   --color-orange-500: #e68f00;
   --color-orange-600: #cc7a00;
   --color-orange-700: #b26600;
+  /* Extends the Figma ramp, which stops at 700 — same reasoning as
+     green-800. orange-700 is 4.38 on white, 4.07 on off-white and 3.54 on
+     beige, so warning *text* in it fails WCAG AA on every brand surface.
+     This is the lightest step of the same hue that passes on all three —
+     white 5.64, off-white 5.24, beige 4.55. Use it for orange text (Badge
+     warning); keep the lighter steps for fills. */
+  --color-orange-800: #985700;
   --color-bg-light-off-white: #f6f7f1;
   --color-bg-light-beige: #eee6d8;
   --color-bg-warm-gray: #dad5c2;

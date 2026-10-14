@@ -319,6 +319,31 @@ notify({ tone: "success", title: "已儲存", message: "你的變更已儲存。
   `role="alert"`/`"status"`, which is unreliable for one that appears at
   runtime — use the region for those.
 
+### Badge tones
+
+`tone`: `brand` (default), `muted`, and the status tones `success`,
+`warning`, `danger`.
+
+```tsx
+<Badge tone="success">已通過</Badge>
+<Badge tone="warning">審核中</Badge>
+<Badge tone="danger">已退件</Badge>
+```
+
+The status tones are outlined rather than filled, so their text sits on the
+page surface, and each text colour clears 4.5:1 on all three brand surfaces:
+
+| Tone | Text | White | Off-white | Beige |
+| --- | --- | --- | --- | --- |
+| success | `green-800` | 5.98 | 5.55 | 4.83 |
+| warning | `orange-800` (new) | 5.64 | 5.24 | 4.55 |
+| danger | `red-600` | 6.13 | 5.69 | 4.95 |
+
+A tinted fill was tried first and fails: even an 8% tint over beige drops the
+three to 4.36 / 4.14 / 4.43. `orange-800: #985700` extends the Figma ramp for
+the same reason `green-800` does — `orange-700` is 3.54 on beige — and is the
+lightest step of that hue that passes everywhere (see `tokens.css`).
+
 ### Pagination
 
 Two modes. With `onPageChange` it renders buttons:
@@ -540,6 +565,9 @@ What the story tests actually pin down, beyond "it renders":
   rest polite, no role on the cards; `max` with queued toasts announced as
   they appear; auto-dismiss paused by hover and by focus; danger stays; focus
   after closing.
+- **Badge** — every tone on all three brand surfaces, with the contrast ratio
+  computed from the browser's colours (so a failure names the tone, the
+  surface, and the ratio), on top of axe.
 - **Pagination** — landmark name, `aria-current`, real `disabled` at both
   ends, focus handed to the current page on reaching an end, the live status
   line, ellipsis slots at the start / middle / end, and link mode with `as`.
@@ -556,7 +584,7 @@ Two conventions worth knowing before adding tests:
 - Query summaries and roles, not free text. A question and its answer can share
   a phrase, which makes `getByText` ambiguous the moment an item expands.
 
-### Two real bugs this found immediately
+### Real bugs this found
 
 Turning axe on over the inherited stories failed the build on two counts, both
 now fixed:
@@ -571,6 +599,11 @@ now fixed:
    you would rather keep the exact Figma value and accept the violation.
 2. **`Select`'s own stories shipped an unnamed control** (axe `select-name`).
    Stories are what people copy, so they now carry a real label.
+
+A third turned up later. **`Badge tone="muted"` failed WCAG AA** at 4.42
+(`neutral-dark-gray` on `neutral-very-light-gray`): Badge had no stories, so
+axe never saw it. It now uses `teal-200` (4.75). Found when the status tones
+were added with a story that renders every tone on every surface.
 
 `Storybook` also logs `"use client" in "src/lib/config.tsx" was ignored` when
 building the static Storybook. That is expected: Storybook bundles an SPA where
