@@ -1,13 +1,15 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
+import { expect, fn, userEvent, within } from "storybook/test"
 import { Toast } from "./Toast.js"
 
 /**
- * Toast — design-system extension (not in Figma). Flat tinted card; the tone is
- * the fill itself, drawn from the Foundations tints (info=blue-100,
- * success=green-100, warning=orange-100, danger=red-100). No border and no
- * close control. Danger announces as `role="alert"`, the rest as polite
- * `role="status"`. Positioning is owned by the app — see ToastNotice, which
- * pins it to the top centre.
+ * Toast — design-system extension (not in Figma). Dark teal card with a tone
+ * dot; an optional close button (`onClose`, named by `closeLabel`).
+ *
+ * For anything that appears at runtime, render toasts through
+ * **ToastRegion**: its live regions are always mounted, so announcements are
+ * reliable, and it handles placement, `max`, and auto-dismiss. A standalone
+ * Toast still carries `role="alert"` (danger) / `role="status"` itself.
  */
 const meta = {
   title: "Components/Toast",
@@ -56,4 +58,24 @@ export const TopCentre: Story = {
       </div>
     </div>
   ),
+}
+
+/** `onClose` adds a close button; `closeLabel` names it. */
+export const WithCloseButton: Story = {
+  args: { onClose: fn(), closeLabel: "關閉這則通知" },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(canvas.getByRole("button", { name: "關閉這則通知" }))
+    await expect(args.onClose).toHaveBeenCalledOnce()
+  },
+}
+
+/** `announce={false}` drops the card's own role, for use inside a live region. */
+export const WithoutOwnRole: Story = {
+  args: { announce: false, tone: "danger", title: "儲存失敗" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.queryByRole("alert")).toBeNull()
+    await expect(canvas.queryByRole("status")).toBeNull()
+  },
 }

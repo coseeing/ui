@@ -1,4 +1,5 @@
 import { cn } from "../../lib/cn.js"
+import { PlusIcon } from "../Icons/Icons.js"
 
 // Toast — design-system extension (not in Figma). A dark teal card matching the
 // SiteNav band, with a small tone dot.
@@ -9,10 +10,13 @@ import { cn } from "../../lib/cn.js"
 // as chrome, separates it from the page at a glance, and keeps one surface for
 // all four tones so the colour never has to carry contrast on its own.
 //
-// Danger announces as role="alert"; everything else as polite role="status".
-// Positioning is left to the caller (see ToastNotice for the app's placement).
+// Announcing: prefer ToastRegion, which keeps its live regions mounted and
+// renders each Toast with `announce={false}`. A standalone Toast still carries
+// role="alert" (danger) or role="status" itself, for compatibility — but a
+// region inserted at the same moment as its text is announced unreliably,
+// which is exactly the case for a toast that just appeared.
 
-type ToastTone = "info" | "success" | "warning" | "danger"
+export type ToastTone = "info" | "success" | "warning" | "danger"
 
 // Mid-ramp steps, chosen to stay legible against teal-PRIMARY.
 const TONE_DOT: Record<ToastTone, string> = {
@@ -26,15 +30,36 @@ type ToastProps = {
   tone?: ToastTone
   title: string
   message?: string
+  /** Shows a close button. */
+  onClose?: () => void
+  /** Accessible name for the close button. */
+  closeLabel?: string
+  /**
+   * Set false inside an always-mounted live region (as ToastRegion does), so
+   * the card does not also carry a role of its own and announce twice.
+   */
+  announce?: boolean
+  /** Lets ToastRegion find the close button to move focus to. */
+  closeRef?: React.Ref<HTMLButtonElement>
   className?: string
 }
 
-export function Toast({ tone = "info", title, message, className }: ToastProps) {
+export function Toast({
+  tone = "info",
+  title,
+  message,
+  onClose,
+  closeLabel = "關閉通知",
+  announce = true,
+  closeRef,
+  className,
+}: ToastProps) {
   return (
     <div
-      role={tone === "danger" ? "alert" : "status"}
+      role={announce ? (tone === "danger" ? "alert" : "status") : undefined}
       className={cn(
         "flex w-full max-w-[40rem] items-start gap-12 rounded-[1.2rem] bg-teal-PRIMARY px-20 py-16 shadow-[0_0.8rem_2.4rem_rgb(16_36_42_/_0.24)]",
+        onClose && "pr-12",
         className,
       )}
     >
@@ -42,7 +67,7 @@ export function Toast({ tone = "info", title, message, className }: ToastProps) 
         aria-hidden="true"
         className={cn("mt-6 size-8 shrink-0 rounded-full", TONE_DOT[tone])}
       />
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <p className="typography-strong1 m-0 text-bg-light-off-white">{title}</p>
         {message ? (
           <p className="typography-body2 m-0 mt-4 text-bg-light-off-white/75">
@@ -50,6 +75,17 @@ export function Toast({ tone = "info", title, message, className }: ToastProps) 
           </p>
         ) : null}
       </div>
+      {onClose ? (
+        <button
+          ref={closeRef}
+          type="button"
+          aria-label={closeLabel}
+          onClick={onClose}
+          className="-my-4 flex size-32 shrink-0 cursor-pointer items-center justify-center rounded-8 border-0 bg-transparent p-0 text-bg-light-off-white transition-colors hover:bg-teal-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-PRIMARY"
+        >
+          <PlusIcon className="size-20 rotate-45" />
+        </button>
+      ) : null}
     </div>
   )
 }

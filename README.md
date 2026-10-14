@@ -18,7 +18,7 @@ src/
 
 ## What's in it
 
-26 primitives, all framework-agnostic:
+27 primitives, all framework-agnostic:
 
 | Group | Components |
 | --- | --- |
@@ -26,12 +26,12 @@ src/
 | Actions & nav | `Button`, `Link`, `Menu`, `Pagination` |
 | Form | `Field`, `Label`, `ValidationMessage`, `Input`, `Textarea`, `Checkbox`, `Select`, `FileUpload`, `Combobox`, `MultiCombobox` |
 | Data | `Badge`, `Tag`, `Table`, `DescriptionList`, `ReorderableList` |
-| Disclosure & feedback | `Accordion`, `Tabs`, `Dialog`, `Toast`, `Spinner`, `LoadingOverlay` |
+| Disclosure & feedback | `Accordion`, `Tabs`, `Dialog`, `Toast`, `ToastRegion`, `Spinner`, `LoadingOverlay` |
 | Icons | 13 brand icons from `Icons` |
 
 Also exported: `cn`, and the `LinkProps` / `AnchorLike` / `TableColumn` /
 `TabItem` / `AccordionEntry` / `ComboboxOption` / `ComboboxLabels` /
-`ComboboxProps` / `MultiComboboxProps` / `PaginationLabels` / `FileUploadLabels` / `DescriptionItem` / `ReorderableListLabels` / `MenuItem` / `MenuTrigger` types.
+`ComboboxProps` / `MultiComboboxProps` / `PaginationLabels` / `FileUploadLabels` / `DescriptionItem` / `ReorderableListLabels` / `MenuItem` / `MenuTrigger` / `ToastTone` / `ToastEntry` types.
 
 There is no provider to mount and nothing to configure globally. Components
 take what they need as props.
@@ -284,6 +284,41 @@ control: to pick a value, use `Select` or `Combobox`.
 - The trigger takes any Button `variant`/`theme`. The popup flips to the
   trigger's other edge when `placement` would overflow the viewport.
 
+### Toasts: `ToastRegion`
+
+The app owns the list; the region decides where, how many, and how long.
+There is no provider — mount it once near the root and keep it mounted:
+
+```tsx
+const [toasts, setToasts] = useState<ToastEntry[]>([])
+const notify = (t: Omit<ToastEntry, "id">) =>
+  setToasts((list) => [...list, { ...t, id: crypto.randomUUID() }])
+
+<ToastRegion
+  toasts={toasts}
+  onDismiss={(id) => setToasts((list) => list.filter((t) => t.id !== id))}
+  position="top-center"   // default; also top-right, bottom-center, bottom-right
+  max={3}                 // the rest wait, timers not yet running
+  duration={5000}         // ms; null = until closed
+/>
+
+notify({ tone: "success", title: "已儲存", message: "你的變更已儲存。" })
+```
+
+- Its two live regions are always mounted, before any toast exists:
+  `danger` is written to the assertive one, everything else to the polite
+  one. The cards carry no role of their own, so nothing is announced twice
+  and nothing depends on a region inserted together with its text.
+- Danger toasts stay until closed unless given a `duration`; an error should
+  not vanish unread.
+- Timers pause while the pointer is over the region or focus is inside it.
+- Every toast has a close button (「關閉通知」, `closeLabel`). Closing moves
+  focus to the next toast, or back to where it was before entering the region.
+- `Toast` on its own gained `onClose`/`closeLabel` and `announce` (set it to
+  `false` inside your own live region). A standalone `Toast` still has
+  `role="alert"`/`"status"`, which is unreliable for one that appears at
+  runtime — use the region for those.
+
 ### Pagination
 
 Two modes. With `onPageChange` it renders buttons:
@@ -364,7 +399,8 @@ const [topics, setTopics] = useState<ComboboxOption[]>([])
 ### Server Components
 
 The build preserves the module graph, so `"use client"` stays on just the
-files that actually need it — `Dialog`, `Tabs`, and `Combobox`, the only
+files that actually need it — `Dialog`, `Tabs`, `Combobox`, `FileUpload`,
+`LoadingOverlay`, `ReorderableList`, `Menu`, and `ToastRegion`, the only
 components with state. Everything else, including `Link` and `Button`, renders on the server.
 Importing `Button` does not drag `Table` into the bundle.
 
@@ -499,6 +535,11 @@ What the story tests actually pin down, beyond "it renders":
   Home/End and typeahead; activation returns focus; disabled items are
   reachable and inert; Esc, Tab and outside-click close; the viewport flip;
   icon-only naming.
+- **Toast / ToastRegion** — the close button and `closeLabel`; `announce`;
+  live regions present before any toast, danger to the assertive one and the
+  rest polite, no role on the cards; `max` with queued toasts announced as
+  they appear; auto-dismiss paused by hover and by focus; danger stays; focus
+  after closing.
 - **Pagination** — landmark name, `aria-current`, real `disabled` at both
   ends, focus handed to the current page on reaching an end, the live status
   line, ellipsis slots at the start / middle / end, and link mode with `as`.
