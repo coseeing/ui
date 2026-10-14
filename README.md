@@ -18,19 +18,20 @@ src/
 
 ## What's in it
 
-16 primitives, all framework-agnostic:
+18 primitives, all framework-agnostic:
 
 | Group | Components |
 | --- | --- |
 | Layout | `Container`, `Card` |
 | Actions & nav | `Button`, `Link` |
-| Form | `Field`, `Label`, `ValidationMessage`, `Input`, `Checkbox`, `Select` |
+| Form | `Field`, `Label`, `ValidationMessage`, `Input`, `Checkbox`, `Select`, `Combobox`, `MultiCombobox` |
 | Data | `Badge`, `Tag`, `Table` |
 | Disclosure & feedback | `Accordion`, `Tabs`, `Dialog`, `Toast` |
 | Icons | 13 brand icons from `Icons` |
 
 Also exported: `cn`, and the `LinkProps` / `AnchorLike` / `TableColumn` /
-`TabItem` / `AccordionEntry` types.
+`TabItem` / `AccordionEntry` / `ComboboxOption` / `ComboboxLabels` /
+`ComboboxProps` / `MultiComboboxProps` types.
 
 There is no provider to mount and nothing to configure globally. Components
 take what they need as props.
@@ -137,11 +138,57 @@ six exports, a mandatory app-root wrapper, a `"use client"` boundary on `Link`
 itself, and implicit action-at-a-distance — to save an app from writing the
 wrapper above once. Props won.
 
+### Searchable selects: `Combobox` and `MultiCombobox`
+
+For option sets too long for `Select`. Both are controlled: the caller owns
+`value` and `options`.
+
+```tsx
+const [topics, setTopics] = useState<ComboboxOption[]>([])
+
+<Field label="主題標籤" htmlFor="topics" error={error && <span id="topics-error">{error}</span>}>
+  <MultiCombobox
+    id="topics"
+    options={options}
+    value={topics}
+    onChange={setTopics}
+    creatable
+    onCreate={async (label) => {
+      const created = await api.createTopic(label)   // caller adds it to options + value
+      setOptions((o) => [...o, created])
+      setTopics((t) => [...t, created])
+    }}
+    invalid={!!error}
+    aria-describedby={error ? "topics-error" : undefined}
+  />
+</Field>
+```
+
+`<Combobox>` takes the same props with `value: ComboboxOption | null`.
+
+- Keyboard follows the APG combobox pattern: ↑/↓ open and move, Home/End jump
+  while an option is highlighted, Enter commits, Esc closes and a second Esc
+  clears. Enter is ignored during IME composition, so committing a 注音/倉頡
+  candidate never selects an option.
+- Nothing is pre-selected: the first match is highlighted but not written into
+  the input.
+- The match count is announced through a live region that is always mounted.
+- In the multi version, choosing a selected option again deselects it, and
+  each selected item has a named remove button (「移除 WCAG」). Removing one
+  moves focus to the next item, or back to the input.
+- `onCreate` only reports the text. Adding the new option to `options` and
+  `value` is the caller's job, since it usually needs a server id first. If the
+  promise rejects, the typed text stays so the user can retry.
+- For server-side search, pass `filter={() => true}` and update `options`
+  (with `loading`) as the query changes.
+- Default strings are Traditional Chinese. Override `emptyText` and
+  `labels={{ loading, results, create, remove, selected }}`.
+
 ### Server Components
 
-The build preserves the module graph, so `"use client"` stays on just the two
-files that actually need it — `Dialog` and `Tabs`, the only components with
-state. Everything else, including `Link` and `Button`, renders on the server.
+The build preserves the module graph, so `"use client"` stays on just the
+files that actually need it — `Dialog`, `Tabs`, and `Combobox`, the only
+components with state. Everything else, including `Link` and `Button`, renders on the server.
 Importing `Button` does not drag `Table` into the bundle.
 
 ESM only. Every current bundler and Node ≥ 18 handles it; there is no CJS build.
@@ -255,6 +302,10 @@ What the story tests actually pin down, beyond "it renders":
 - **Accordion** — expand/collapse, and items open independently.
 - **Checkbox** — clicking the label text toggles the box, which only works if
   the `htmlFor`/`id` pairing holds.
+- **Combobox** — APG wiring (`aria-controls`, `aria-activedescendant`), no
+  pre-selection, ↑/↓ wrap, Home/End, double Esc, Enter ignored during IME
+  composition, create, multi toggle, focus after removing an item, and the
+  persistent result-count live region.
 - **Field** — the error message lands in an always-mounted `aria-live` region
   and does not also carry `role="alert"` (which would announce twice); `error`
   replaces `hint` rather than stacking.

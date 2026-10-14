@@ -26,6 +26,13 @@ export { Field, Label, ValidationMessage } from "./components/Field/Field.js"
 export { Input } from "./components/Input/Input.js"
 export { Checkbox } from "./components/Checkbox/Checkbox.js"
 export { Select } from "./components/Select/Select.js"
+export { Combobox, MultiCombobox } from "./components/Combobox/Combobox.js"
+export type {
+  ComboboxOption,
+  ComboboxLabels,
+  ComboboxProps,
+  MultiComboboxProps,
+} from "./components/Combobox/Combobox.js"
 
 // ── Data display ────────────────────────────────────────────────────────────
 export { Badge } from "./components/Badge/Badge.js"
