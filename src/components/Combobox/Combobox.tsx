@@ -91,6 +91,9 @@ const inputStyles =
 const invalidStyles =
   "border-red-PRIMARY focus:border-red-PRIMARY focus-visible:ring-red-PRIMARY"
 
+/** Quiet period before the result count is announced, in ms. */
+const ANNOUNCE_DELAY = 500
+
 const defaultFilter = (option: ComboboxOption, query: string) =>
   option.label.toLocaleLowerCase().includes(query.toLocaleLowerCase())
 
@@ -154,6 +157,9 @@ function ComboboxBase({
 
   const rootRef = useRef<HTMLDivElement>(null)
   const composingRef = useRef(false)
+  // State as well as the ref: the announcement effect must re-run when a
+  // composition ends.
+  const [composing, setComposing] = useState(false)
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(-1)
   const [creating, setCreating] = useState(false)
@@ -291,6 +297,22 @@ function ComboboxBase({
   }
   const message = open && (loading || matches.length === 0) ? status : ""
 
+  // What the live region actually says. Updating it on every keystroke made
+  // VoiceOver read stale counts: it speaks the typed character first, so by
+  // the time it reached the region the text had moved on, and it would say
+  // "2 個結果" for a query that now matched nothing. Announce only once input
+  // settles, and never mid-composition, when the text is still 注音 like ㄨˊ.
+  const [announcement, setAnnouncement] = useState("")
+  useEffect(() => {
+    if (!status) {
+      setAnnouncement("")
+      return
+    }
+    if (composing) return
+    const timer = setTimeout(() => setAnnouncement(status), ANNOUNCE_DELAY)
+    return () => clearTimeout(timer)
+  }, [status, composing])
+
   return (
     <div
       ref={rootRef}
@@ -327,9 +349,11 @@ function ComboboxBase({
         onKeyDown={onKeyDown}
         onCompositionStart={() => {
           composingRef.current = true
+          setComposing(true)
         }}
         onCompositionEnd={() => {
           composingRef.current = false
+          setComposing(false)
         }}
         className={cn(inputStyles, invalid && invalidStyles)}
       />
@@ -396,9 +420,10 @@ function ComboboxBase({
       </div>
 
       {/* Always mounted, so the count is announced as it changes rather than
-          depending on a region inserted at the same moment as its text. */}
+          depending on a region inserted at the same moment as its text.
+          Debounced: see `announcement`. */}
       <div role="status" className="sr-only">
-        {status}
+        {announcement}
       </div>
     </div>
   )

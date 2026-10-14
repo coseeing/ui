@@ -323,7 +323,12 @@ export const MultiToggles: Story = {
 
 /**
  * The live region is mounted before anything is typed and announces the match
- * count, then `emptyText`, as the filter changes.
+ * count, then `emptyText`, once typing pauses.
+ *
+ * Debounced on purpose. Updated on every keystroke, VoiceOver read stale
+ * text: it speaks the typed character first, and by the time it reached the
+ * region it announced the previous query's count — "2 個結果" for a query
+ * that matched nothing.
  */
 export const AnnouncesResultCount: Story = {
   args: { creatable: false },
@@ -335,10 +340,40 @@ export const AnnouncesResultCount: Story = {
     const input = canvas.getByRole("combobox", { name: "主題標籤" })
     input.focus()
     await userEvent.keyboard("a")
-    await expect(status).toHaveTextContent("2 個結果") // WCAG, ARIA
+    // Not yet: the intermediate count must never reach the region.
+    await expect(status).toHaveTextContent("")
     await userEvent.keyboard("zz")
-    await expect(status).toHaveTextContent("找不到符合的選項")
+    await expect(status).toHaveTextContent("")
+    await waitFor(() => expect(status).toHaveTextContent("找不到符合的選項"))
     await expect(input).toHaveAttribute("aria-expanded", "false")
+
+    await userEvent.keyboard("{Backspace}{Backspace}")
+    await waitFor(() => expect(status).toHaveTextContent("2 個結果")) // WCAG, ARIA
+  },
+}
+
+/**
+ * Nothing is announced while an IME composition is in progress — the text is
+ * still 注音 (ㄨˊ) and matches nothing yet. The count follows compositionend.
+ * `fireEvent` because `userEvent` cannot drive an input method.
+ */
+export const NoAnnouncementWhileComposing: Story = {
+  args: { creatable: false },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const status = canvas.getByRole("status")
+    const input = canvas.getByRole("combobox", { name: "主題標籤" })
+
+    input.focus()
+    fireEvent.compositionStart(input)
+    fireEvent.change(input, { target: { value: "ㄗˋ" } })
+    // Well past the debounce: still silent.
+    await new Promise((r) => setTimeout(r, 800))
+    await expect(status).toHaveTextContent("")
+
+    fireEvent.change(input, { target: { value: "字" } })
+    fireEvent.compositionEnd(input)
+    await waitFor(() => expect(status).toHaveTextContent("2 個結果")) // 字幕, 替代文字
   },
 }
 
@@ -349,7 +384,7 @@ export const Loading: Story = {
     const canvas = within(canvasElement)
     canvas.getByRole("combobox", { name: "主題標籤" }).focus()
     await userEvent.keyboard("{ArrowDown}")
-    await expect(canvas.getByRole("status")).toHaveTextContent("載入中")
+    await waitFor(() => expect(canvas.getByRole("status")).toHaveTextContent("載入中"))
   },
 }
 
