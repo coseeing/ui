@@ -20,6 +20,8 @@ export { Card } from "./components/Card/Card.js"
 export { Button } from "./components/Button/Button.js"
 export { Link } from "./components/Link/Link.js"
 export type { LinkProps, AnchorLike } from "./components/Link/Link.js"
+export { Pagination } from "./components/Pagination/Pagination.js"
+export type { PaginationLabels } from "./components/Pagination/Pagination.js"
 
 // ── Form primitives ─────────────────────────────────────────────────────────
 export { Field, Label, ValidationMessage } from "./components/Field/Field.js"

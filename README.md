@@ -18,12 +18,12 @@ src/
 
 ## What's in it
 
-18 primitives, all framework-agnostic:
+19 primitives, all framework-agnostic:
 
 | Group | Components |
 | --- | --- |
 | Layout | `Container`, `Card` |
-| Actions & nav | `Button`, `Link` |
+| Actions & nav | `Button`, `Link`, `Pagination` |
 | Form | `Field`, `Label`, `ValidationMessage`, `Input`, `Checkbox`, `Select`, `Combobox`, `MultiCombobox` |
 | Data | `Badge`, `Tag`, `Table` |
 | Disclosure & feedback | `Accordion`, `Tabs`, `Dialog`, `Toast` |
@@ -31,7 +31,7 @@ src/
 
 Also exported: `cn`, and the `LinkProps` / `AnchorLike` / `TableColumn` /
 `TabItem` / `AccordionEntry` / `ComboboxOption` / `ComboboxLabels` /
-`ComboboxProps` / `MultiComboboxProps` types.
+`ComboboxProps` / `MultiComboboxProps` / `PaginationLabels` types.
 
 There is no provider to mount and nothing to configure globally. Components
 take what they need as props.
@@ -137,6 +137,32 @@ package shipped a `UIProvider` that supplied `basePath`, `pathname`, and
 six exports, a mandatory app-root wrapper, a `"use client"` boundary on `Link`
 itself, and implicit action-at-a-distance — to save an app from writing the
 wrapper above once. Props won.
+
+### Pagination
+
+Two modes. With `onPageChange` it renders buttons:
+
+```tsx
+<Pagination page={page} pageCount={20} total={195} onPageChange={setPage} />
+```
+
+With `href` it renders links, and works in a Server Component (no
+`"use client"`, no hooks). `as` takes the router link, as on `Link`:
+
+```tsx
+<Pagination page={page} pageCount={20} href={(p) => `/articles?page=${p}`} as={NextLink} />
+```
+
+- `<nav aria-label="分頁">` (override with `label`); the current page has
+  `aria-current="page"`; page buttons are named 「第 3 頁」.
+- Previous/next are `disabled` at the ends — in link mode they become a
+  disabled `<button>`, since a link has no disabled state. In button mode,
+  reaching an end moves focus to the new current page instead of dropping it.
+- The status line 「第 2／10 頁，共 195 筆」 is visible and is a live region
+  (`role="status"`), so page changes are announced. `total` is optional.
+- Ellipses keep a fixed number of slots — first, last, current ±
+  `siblingCount` — whatever the page count.
+- Strings are in `labels` (`previous`, `next`, `page`, `status`).
 
 ### Searchable selects: `Combobox` and `MultiCombobox`
 
@@ -311,6 +337,9 @@ What the story tests actually pin down, beyond "it renders":
   pre-selection, ↑/↓ wrap, Home/End, double Esc, Enter ignored during IME
   composition, create, multi toggle, focus after removing an item, and the
   persistent result-count live region.
+- **Pagination** — landmark name, `aria-current`, real `disabled` at both
+  ends, focus handed to the current page on reaching an end, the live status
+  line, ellipsis slots at the start / middle / end, and link mode with `as`.
 - **Field** — the error message lands in an always-mounted `aria-live` region
   and does not also carry `role="alert"` (which would announce twice); `error`
   replaces `hint` rather than stacking.
