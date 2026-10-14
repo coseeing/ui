@@ -272,6 +272,14 @@ export const CreatesNewOption: Story = {
     await waitFor(() => expect(args.onCreate).toHaveBeenCalledWith("wcag 2.2"))
     await waitFor(() => expect(input).toHaveValue(""))
     await expect(canvas.getByRole("button", { name: "移除 wcag 2.2" })).toBeVisible()
+
+    // The caller also selected it, and the notice says so. It must outlast
+    // the debounced count for the now-empty query, which would otherwise
+    // replace it and leave the user hearing only "9 個結果".
+    const status = canvas.getByRole("status")
+    await waitFor(() => expect(status).toHaveTextContent("已新增並選取「wcag 2.2」"))
+    await new Promise((r) => setTimeout(r, 800))
+    await expect(status).toHaveTextContent("已新增並選取「wcag 2.2」")
   },
 }
 
@@ -287,6 +295,8 @@ export const RemoveMovesFocus: Story = {
 
     await userEvent.click(canvas.getByRole("button", { name: "移除 WCAG" }))
     await expect(args.onChange).toHaveBeenLastCalledWith(TOPICS.slice(1, 3))
+    // Focus lands on the *next* item, so say which one went.
+    await expect(canvas.getByRole("status")).toHaveTextContent("已移除 WCAG")
     await waitFor(() =>
       expect(canvas.getByRole("button", { name: "移除 ARIA" })).toHaveFocus(),
     )
@@ -308,6 +318,8 @@ export const MultiToggles: Story = {
     input.focus()
     await userEvent.keyboard("{ArrowDown}{Enter}")
     await expect(args.onChange).toHaveBeenLastCalledWith([TOPICS[0]])
+    const status = canvas.getByRole("status")
+    await expect(status).toHaveTextContent("已選取 WCAG")
     // Stays open for the next pick, and says the option is now selected.
     await expect(input).toHaveAttribute("aria-expanded", "true")
     await expect(canvas.getByRole("listbox")).toHaveAttribute("aria-multiselectable", "true")
@@ -318,6 +330,13 @@ export const MultiToggles: Story = {
 
     await userEvent.keyboard("{Enter}")
     await expect(args.onChange).toHaveBeenLastCalledWith([])
+    await expect(status).toHaveTextContent("已取消選取 WCAG")
+
+    // Typing again hands the region back to the result count, without
+    // re-reading the stale notice or the count from before it.
+    await userEvent.keyboard("ar")
+    await expect(status).toHaveTextContent("")
+    await waitFor(() => expect(status).toHaveTextContent("1 個結果"))
   },
 }
 

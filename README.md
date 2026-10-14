@@ -172,7 +172,11 @@ const [topics, setTopics] = useState<ComboboxOption[]>([])
   candidate never selects an option.
 - Nothing is pre-selected: the first match is highlighted but not written into
   the input.
-- The match count is announced through a live region that is always mounted.
+- The match count is announced through a live region that is always mounted,
+  once typing pauses (500ms) and never mid-IME-composition. Actions are
+  announced too — 「已選取 WCAG」, 「已取消選取 WCAG」, 「已移除 WCAG」,
+  「已新增並選取「X」」 (or 「已新增「X」」 when the caller did not select it)
+  — and hold the region until the user types again.
 - In the multi version, choosing a selected option again deselects it, and
   each selected item has a named remove button (「移除 WCAG」). Removing one
   moves focus to the next item, or back to the input.
@@ -181,8 +185,9 @@ const [topics, setTopics] = useState<ComboboxOption[]>([])
   promise rejects, the typed text stays so the user can retry.
 - For server-side search, pass `filter={() => true}` and update `options`
   (with `loading`) as the query changes.
-- Default strings are Traditional Chinese. Override `emptyText` and
-  `labels={{ loading, results, create, remove, selected }}`.
+- Default strings are Traditional Chinese. Override `emptyText` and `labels`
+  (`loading`, `results`, `create`, `remove`, `selected`, and the
+  `announce*` messages); see `ComboboxLabels`.
 
 ### Server Components
 

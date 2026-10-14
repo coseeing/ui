@@ -34,6 +34,16 @@ export type ComboboxLabels = {
   remove: (label: string) => string
   /** Accessible name of the selected-items list (multi only). */
   selected: string
+  /** Announced after an option is chosen. */
+  announceSelect: (label: string) => string
+  /** Announced after a selected option is chosen again (multi only). */
+  announceDeselect: (label: string) => string
+  /** Announced after a selected item's remove button (multi only). */
+  announceRemove: (label: string) => string
+  /** Announced after `onCreate` resolves, when the caller did not select it. */
+  announceCreate: (label: string) => string
+  /** Announced after `onCreate` resolves and the new option is in `value`. */
+  announceCreateSelect: (label: string) => string
 }
 
 const DEFAULT_LABELS: ComboboxLabels = {
@@ -42,6 +52,52 @@ const DEFAULT_LABELS: ComboboxLabels = {
   create: (label) => `新增「${label}」`,
   remove: (label) => `移除 ${label}`,
   selected: "已選取的項目",
+  announceSelect: (label) => `已選取 ${label}`,
+  announceDeselect: (label) => `已取消選取 ${label}`,
+  announceRemove: (label) => `已移除 ${label}`,
+  announceCreate: (label) => `已新增「${label}」`,
+  announceCreateSelect: (label) => `已新增並選取「${label}」`,
+}
+
+/**
+ * A one-off message for the live region. `n` changes on every notice, so the
+ * same text twice in a row (select, deselect, select) is still a change.
+ */
+type Notice = { text: string; n: number }
+
+/**
+ * Action notices — "已選取 WCAG", "已移除 WCAG" — for the live region. Without
+ * them a screen reader user hears nothing after Enter, or only the count of
+ * the now-cleared query, and cannot tell the action happened.
+ */
+function useNotice() {
+  const [notice, setNotice] = useState<Notice | null>(null)
+  const say = (text: string) => setNotice((prev) => ({ text, n: (prev?.n ?? 0) + 1 }))
+  return { notice, say, clear: () => setNotice(null) }
+}
+
+/**
+ * After `onCreate` resolves, checks whether the caller also put the new option
+ * into `value` — the component cannot know — and announces accordingly.
+ */
+function useCreatedNotice(
+  isPicked: (label: string) => boolean,
+  say: (text: string) => void,
+  l: ComboboxLabels,
+) {
+  const [created, setCreated] = useState<{ label: string } | null>(null)
+  useEffect(() => {
+    if (!created) return
+    say(
+      isPicked(created.label)
+        ? l.announceCreateSelect(created.label)
+        : l.announceCreate(created.label),
+    )
+    setCreated(null)
+    // Keyed on `created` alone: one check per creation, against the render
+    // that follows it, by which point the caller's state updates have landed.
+  }, [created])
+  return (label: string) => setCreated({ label })
 }
 
 type SharedProps = {
@@ -115,7 +171,10 @@ type BaseProps = Omit<SharedProps, "className"> & {
   onQueryChange: (query: string) => void
   isSelected: (option: ComboboxOption) => boolean
   onSelect: (option: ComboboxOption) => void
-  onCreated: () => void
+  onCreated: (label: string) => void
+  /** Takes precedence over the result count until the user types again. */
+  notice: Notice | null
+  onType: () => void
   /** Escape with the popup already closed. */
   onClear: () => void
   /** Focus left the combobox. */
@@ -146,6 +205,8 @@ function ComboboxBase({
   isSelected,
   onSelect,
   onCreated,
+  notice,
+  onType,
   onClear,
   onLeave,
 }: BaseProps) {
@@ -209,7 +270,7 @@ function ComboboxBase({
       .then(() => {
         setActive(-1)
         if (!multiple) setOpen(false)
-        onCreated()
+        onCreated(label)
       })
       // The caller owns error reporting (e.g. Field `error` + `invalid`); the
       // text is left in place so the user can correct it and try again.
@@ -341,6 +402,10 @@ function ComboboxBase({
         placeholder={placeholder}
         value={inputValue}
         onChange={(e) => {
+          // Drop the last notice and the last count together, so neither is
+          // re-read when the region falls back to the (debounced) count.
+          setAnnouncement("")
+          onType()
           onQueryChange(e.target.value)
           setOpen(true)
           setActive(-1)
@@ -423,7 +488,7 @@ function ComboboxBase({
           depending on a region inserted at the same moment as its text.
           Debounced: see `announcement`. */}
       <div role="status" className="sr-only">
-        {announcement}
+        {notice ? <span key={notice.n}>{notice.text}</span> : announcement}
       </div>
     </div>
   )
@@ -446,7 +511,14 @@ function CheckMark() {
 
 /** Single-select combobox. `value` is one option or null. */
 export function Combobox({ value, onChange, ...props }: ComboboxProps) {
+  const l = { ...DEFAULT_LABELS, ...props.labels }
   const inputRef = useRef<HTMLInputElement>(null)
+  const { notice, say, clear } = useNotice()
+  const announceCreated = useCreatedNotice(
+    (label) => !!value && sameLabel(value.label, label),
+    say,
+    l,
+  )
   const [query, setQuery] = useState("")
   // While editing, the input shows what the user typed; otherwise it mirrors
   // the committed value.
@@ -472,8 +544,14 @@ export function Combobox({ value, onChange, ...props }: ComboboxProps) {
       onSelect={(o) => {
         onChange(o)
         reset()
+        say(l.announceSelect(o.label))
       }}
-      onCreated={reset}
+      onCreated={(label) => {
+        reset()
+        announceCreated(label)
+      }}
+      notice={notice}
+      onType={clear}
       onClear={() => {
         reset()
         if (value) onChange(null)
@@ -504,6 +582,12 @@ export function MultiCombobox({
   const inputRef = useRef<HTMLInputElement>(null)
   const removeRefs = useRef(new Map<string, HTMLButtonElement>())
   const [query, setQuery] = useState("")
+  const { notice, say, clear } = useNotice()
+  const announceCreated = useCreatedNotice(
+    (label) => value.some((o) => sameLabel(o.label, label)),
+    say,
+    l,
+  )
 
   // After a removal, focus goes to the next item's remove button, or back to
   // the input when the last one went. Applied once the new `value` renders.
@@ -521,6 +605,7 @@ export function MultiCombobox({
   const remove = (index: number) => {
     pendingFocus.current = value[index + 1]?.value ?? null
     onChange(value.filter((_, i) => i !== index))
+    say(l.announceRemove(value[index]!.label))
   }
 
   return (
@@ -561,14 +646,17 @@ export function MultiCombobox({
         onQueryChange={setQuery}
         isSelected={(o) => selected.has(o.value)}
         onSelect={(o) => {
-          onChange(
-            selected.has(o.value)
-              ? value.filter((v) => v.value !== o.value)
-              : [...value, o],
-          )
+          const was = selected.has(o.value)
+          onChange(was ? value.filter((v) => v.value !== o.value) : [...value, o])
           setQuery("")
+          say(was ? l.announceDeselect(o.label) : l.announceSelect(o.label))
         }}
-        onCreated={() => setQuery("")}
+        onCreated={(label) => {
+          setQuery("")
+          announceCreated(label)
+        }}
+        notice={notice}
+        onType={clear}
         onClear={() => setQuery("")}
         onLeave={() => setQuery("")}
       />
