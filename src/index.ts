@@ -54,6 +54,8 @@ export { Tabs } from "./components/Tabs/Tabs.js"
 export type { TabItem } from "./components/Tabs/Tabs.js"
 export { Dialog } from "./components/Dialog/Dialog.js"
 export { Toast } from "./components/Toast/Toast.js"
+export { Spinner } from "./components/Spinner/Spinner.js"
+export { LoadingOverlay } from "./components/LoadingOverlay/LoadingOverlay.js"
 
 // ── Icons ───────────────────────────────────────────────────────────────────
 export * from "./components/Icons/Icons.js"

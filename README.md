@@ -18,7 +18,7 @@ src/
 
 ## What's in it
 
-22 primitives, all framework-agnostic:
+24 primitives, all framework-agnostic:
 
 | Group | Components |
 | --- | --- |
@@ -26,7 +26,7 @@ src/
 | Actions & nav | `Button`, `Link`, `Pagination` |
 | Form | `Field`, `Label`, `ValidationMessage`, `Input`, `Textarea`, `Checkbox`, `Select`, `FileUpload`, `Combobox`, `MultiCombobox` |
 | Data | `Badge`, `Tag`, `Table`, `DescriptionList` |
-| Disclosure & feedback | `Accordion`, `Tabs`, `Dialog`, `Toast` |
+| Disclosure & feedback | `Accordion`, `Tabs`, `Dialog`, `Toast`, `Spinner`, `LoadingOverlay` |
 | Icons | 13 brand icons from `Icons` |
 
 Also exported: `cn`, and the `LinkProps` / `AnchorLike` / `TableColumn` /
@@ -200,6 +200,29 @@ Read-only field/value pairs, on a semantic `<dl>`/`<dt>`/`<dd>`:
 
 Stacked on mobile; two columns from tablet up, with a fixed 16rem term column
 so values line up. No state, so it renders on the server.
+
+### Spinner and LoadingOverlay
+
+```tsx
+<Spinner label="載入中" size="sm" />          // role="status", label visually hidden
+
+<LoadingOverlay active={saving} label="資料處理中">
+  <Card>…</Card>                               // inert while active
+</LoadingOverlay>
+
+<LoadingOverlay active={exporting} fullPage label="匯出中" />
+```
+
+- `Spinner` holds still under `prefers-reduced-motion`. Its `role="status"`
+  is mounted together with its label, which screen readers often do not
+  announce — fine for "something is loading here", not for "tell me when it
+  starts and ends". That is LoadingOverlay's job.
+- `LoadingOverlay` makes the covered content `inert` (not clickable,
+  focusable, or readable) and sets `aria-busy`. If focus was inside, it moves
+  to the overlay panel and returns afterwards. An always-mounted live region
+  announces `label` on start and `doneLabel` (「載入完畢」) on finish.
+- `fullPage` renders into `<body>` via a portal and sets `inert` on every other
+  child of `<body>`, restoring each afterwards.
 
 ### Pagination
 
@@ -404,6 +427,11 @@ What the story tests actually pin down, beyond "it renders":
   hidden from the tab order and a11y tree; re-selecting twice (including the
   same file); an existing URL shows preview and 刪除; a broken image shows an
   error, not 未設定; focus after removing; drop, and drop outside `accept`.
+- **Spinner** — the label reaches the status role, and the reduced-motion
+  rule really sets `animation: none` on the ring.
+- **LoadingOverlay** — covered content is inert and `aria-busy`, content
+  outside is not; focus moves to the panel and back; start and 載入完畢 are
+  announced; `fullPage` inerts the rest of `<body>` and restores it.
 - **Pagination** — landmark name, `aria-current`, real `disabled` at both
   ends, focus handed to the current page on reaching an end, the live status
   line, ellipsis slots at the start / middle / end, and link mode with `as`.
