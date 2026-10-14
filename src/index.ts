@@ -43,6 +43,8 @@ export type {
 export { Badge } from "./components/Badge/Badge.js"
 export { Tag } from "./components/Tag/Tag.js"
 export { Table } from "./components/Table/Table.js"
+export { DescriptionList } from "./components/DescriptionList/DescriptionList.js"
+export type { DescriptionItem } from "./components/DescriptionList/DescriptionList.js"
 export type { TableColumn } from "./components/Table/Table.js"
 
 // ── Disclosure & feedback ───────────────────────────────────────────────────

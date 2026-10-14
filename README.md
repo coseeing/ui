@@ -18,20 +18,20 @@ src/
 
 ## What's in it
 
-21 primitives, all framework-agnostic:
+22 primitives, all framework-agnostic:
 
 | Group | Components |
 | --- | --- |
 | Layout | `Container`, `Card` |
 | Actions & nav | `Button`, `Link`, `Pagination` |
 | Form | `Field`, `Label`, `ValidationMessage`, `Input`, `Textarea`, `Checkbox`, `Select`, `FileUpload`, `Combobox`, `MultiCombobox` |
-| Data | `Badge`, `Tag`, `Table` |
+| Data | `Badge`, `Tag`, `Table`, `DescriptionList` |
 | Disclosure & feedback | `Accordion`, `Tabs`, `Dialog`, `Toast` |
 | Icons | 13 brand icons from `Icons` |
 
 Also exported: `cn`, and the `LinkProps` / `AnchorLike` / `TableColumn` /
 `TabItem` / `AccordionEntry` / `ComboboxOption` / `ComboboxLabels` /
-`ComboboxProps` / `MultiComboboxProps` / `PaginationLabels` / `FileUploadLabels` types.
+`ComboboxProps` / `MultiComboboxProps` / `PaginationLabels` / `FileUploadLabels` / `DescriptionItem` types.
 
 There is no provider to mount and nothing to configure globally. Components
 take what they need as props.
@@ -184,6 +184,22 @@ const [cover, setCover] = useState<File | string | null>(existingUrl)
   against `accept`, since only the picker enforces it natively.
 - Strings are in `labels`; set `choose`/`remove` to 「選擇檔案」/「刪除檔案」
   for non-image uploads.
+
+### DescriptionList
+
+Read-only field/value pairs, on a semantic `<dl>`/`<dt>`/`<dd>`:
+
+```tsx
+<DescriptionList
+  items={[
+    { term: "姓名", description: "王小明" },
+    { term: "帳號身分", description: <Badge>志工</Badge> },
+  ]}
+/>
+```
+
+Stacked on mobile; two columns from tablet up, with a fixed 16rem term column
+so values line up. No state, so it renders on the server.
 
 ### Pagination
 
