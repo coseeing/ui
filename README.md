@@ -18,12 +18,12 @@ src/
 
 ## What's in it
 
-25 primitives, all framework-agnostic:
+26 primitives, all framework-agnostic:
 
 | Group | Components |
 | --- | --- |
 | Layout | `Container`, `Card` |
-| Actions & nav | `Button`, `Link`, `Pagination` |
+| Actions & nav | `Button`, `Link`, `Menu`, `Pagination` |
 | Form | `Field`, `Label`, `ValidationMessage`, `Input`, `Textarea`, `Checkbox`, `Select`, `FileUpload`, `Combobox`, `MultiCombobox` |
 | Data | `Badge`, `Tag`, `Table`, `DescriptionList`, `ReorderableList` |
 | Disclosure & feedback | `Accordion`, `Tabs`, `Dialog`, `Toast`, `Spinner`, `LoadingOverlay` |
@@ -31,7 +31,7 @@ src/
 
 Also exported: `cn`, and the `LinkProps` / `AnchorLike` / `TableColumn` /
 `TabItem` / `AccordionEntry` / `ComboboxOption` / `ComboboxLabels` /
-`ComboboxProps` / `MultiComboboxProps` / `PaginationLabels` / `FileUploadLabels` / `DescriptionItem` / `ReorderableListLabels` types.
+`ComboboxProps` / `MultiComboboxProps` / `PaginationLabels` / `FileUploadLabels` / `DescriptionItem` / `ReorderableListLabels` / `MenuItem` / `MenuTrigger` types.
 
 There is no provider to mount and nothing to configure globally. Components
 take what they need as props.
@@ -248,6 +248,42 @@ so values line up. No state, so it renders on the server.
 - `renderItem` for richer rows; `removable={false}` to hide 移除; strings in
   `labels`.
 
+### Menu
+
+A menu button for actions or navigation — 更多操作, 帳號選單. Not a form
+control: to pick a value, use `Select` or `Combobox`.
+
+```tsx
+<Menu
+  label="更多操作"
+  trigger={{ variant: "small", theme: "greenStroke" }}
+  placement="bottom-end"
+  items={[
+    { key: "edit", label: "編輯活動", onSelect: edit },
+    { key: "report", label: "下載報名名單", href: "/events/42/report.csv", as: NextLink },
+    { key: "archive", label: "封存", onSelect: archive, disabled: true },
+    { type: "separator" },
+    { key: "delete", label: "刪除活動", onSelect: confirmDelete, tone: "danger" },
+  ]}
+/>
+
+// Icon-only: the type requires aria-label.
+<Menu label="帳號選單" trigger={{ icon: <MenuIcon />, iconOnly: true, "aria-label": "帳號選單" }} items={…} />
+```
+
+- APG Menu Button: `aria-haspopup="menu"`, `aria-expanded`, `aria-controls`;
+  `role="menu"` / `menuitem` (an `<a>` for `href` items) / `separator`.
+- Enter, Space or ↓ open on the first item, ↑ on the last. Inside: ↑/↓ wrap,
+  Home/End, type to jump (keys within 500ms build one prefix), Enter/Space
+  activate and close, Esc closes back to the trigger, Tab closes and moves on.
+  Clicking outside closes. Focus is not trapped.
+- After an action, focus returns to the trigger — unless the action moved it
+  (e.g. opened a Dialog).
+- `disabled` items are `aria-disabled`: reachable and announced, but inert.
+- `tone: "danger"` is red-600 text: 6.13:1 on white, 4.95:1 on the focus fill.
+- The trigger takes any Button `variant`/`theme`. The popup flips to the
+  trigger's other edge when `placement` would overflow the viewport.
+
 ### Pagination
 
 Two modes. With `onPageChange` it renders buttons:
@@ -459,6 +495,10 @@ What the story tests actually pin down, beyond "it renders":
 - **ReorderableList** — `<ol>` semantics and item-named buttons;
   `aria-disabled` at the ends; focus kept through moves and an end;
   announcements; focus after removing the middle, last, and only row.
+- **Menu** — trigger and menu wiring; Enter/Space/↓/↑ opening; wrap,
+  Home/End and typeahead; activation returns focus; disabled items are
+  reachable and inert; Esc, Tab and outside-click close; the viewport flip;
+  icon-only naming.
 - **Pagination** — landmark name, `aria-current`, real `disabled` at both
   ends, focus handed to the current page on reaching an end, the live status
   line, ellipsis slots at the start / middle / end, and link mode with `as`.

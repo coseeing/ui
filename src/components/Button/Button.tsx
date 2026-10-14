@@ -32,8 +32,18 @@ const variantStyles = {
   },
 } as const
 
-type ButtonVariant = keyof typeof variantStyles
-type ButtonTheme<V extends ButtonVariant> = keyof (typeof variantStyles)[V]
+export type ButtonVariant = keyof typeof variantStyles
+export type ButtonTheme<V extends ButtonVariant> = keyof (typeof variantStyles)[V]
+
+/**
+ * The class list for a variant/theme pair, for controls that must look like a
+ * Button but render their own element (e.g. Menu's trigger, which needs ARIA
+ * attributes and a ref Button does not take). Internal; not in the barrel.
+ */
+export function buttonClasses<V extends ButtonVariant>(variant: V, theme: ButtonTheme<V>) {
+  const styles = variantStyles[variant]
+  return cn(baseStyles, styles.base, styles[theme] as string)
+}
 
 type ButtonProps<V extends ButtonVariant = "primary"> = {
   id?: string
@@ -80,9 +90,7 @@ export function Button<V extends ButtonVariant = "primary">({
   onClick,
   children,
 }: ButtonProps<V>) {
-  const styles = variantStyles[variant]
-  const themeClass = styles[theme] as string
-  const classes = cn(baseStyles, styles.base, themeClass, className)
+  const classes = cn(buttonClasses(variant, theme), className)
   const isInert = disabled || isLoading
 
   // Render as a link unless inert — a disabled <a> can't be inert, so fall
