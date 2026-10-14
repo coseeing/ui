@@ -18,13 +18,13 @@ src/
 
 ## What's in it
 
-19 primitives, all framework-agnostic:
+20 primitives, all framework-agnostic:
 
 | Group | Components |
 | --- | --- |
 | Layout | `Container`, `Card` |
 | Actions & nav | `Button`, `Link`, `Pagination` |
-| Form | `Field`, `Label`, `ValidationMessage`, `Input`, `Checkbox`, `Select`, `Combobox`, `MultiCombobox` |
+| Form | `Field`, `Label`, `ValidationMessage`, `Input`, `Textarea`, `Checkbox`, `Select`, `Combobox`, `MultiCombobox` |
 | Data | `Badge`, `Tag`, `Table` |
 | Disclosure & feedback | `Accordion`, `Tabs`, `Dialog`, `Toast` |
 | Icons | 13 brand icons from `Icons` |
@@ -137,6 +137,22 @@ package shipped a `UIProvider` that supplied `basePath`, `pathname`, and
 six exports, a mandatory app-root wrapper, a `"use client"` boundary on `Link`
 itself, and implicit action-at-a-distance — to save an app from writing the
 wrapper above once. Props won.
+
+### Textarea
+
+The `Input` shell, multi-line. `invalid` sets `aria-invalid`; `rows`
+(default 4) and every native textarea attribute pass through.
+
+```tsx
+<Field label="自我介紹" htmlFor="bio" hint={<span id="bio-hint">最多 200 字</span>}>
+  <Textarea id="bio" aria-describedby="bio-hint" maxLength={200} autoResize />
+</Field>
+```
+
+`autoResize` grows the field with its content using CSS `field-sizing:
+content`, so `Textarea` stays a Server Component. Browsers without
+`field-sizing` (Firefox, at the time of writing) keep the fixed `rows` height
+and the manual resize handle.
 
 ### Pagination
 
