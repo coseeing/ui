@@ -18,20 +18,20 @@ src/
 
 ## What's in it
 
-24 primitives, all framework-agnostic:
+25 primitives, all framework-agnostic:
 
 | Group | Components |
 | --- | --- |
 | Layout | `Container`, `Card` |
 | Actions & nav | `Button`, `Link`, `Pagination` |
 | Form | `Field`, `Label`, `ValidationMessage`, `Input`, `Textarea`, `Checkbox`, `Select`, `FileUpload`, `Combobox`, `MultiCombobox` |
-| Data | `Badge`, `Tag`, `Table`, `DescriptionList` |
+| Data | `Badge`, `Tag`, `Table`, `DescriptionList`, `ReorderableList` |
 | Disclosure & feedback | `Accordion`, `Tabs`, `Dialog`, `Toast`, `Spinner`, `LoadingOverlay` |
 | Icons | 13 brand icons from `Icons` |
 
 Also exported: `cn`, and the `LinkProps` / `AnchorLike` / `TableColumn` /
 `TabItem` / `AccordionEntry` / `ComboboxOption` / `ComboboxLabels` /
-`ComboboxProps` / `MultiComboboxProps` / `PaginationLabels` / `FileUploadLabels` / `DescriptionItem` types.
+`ComboboxProps` / `MultiComboboxProps` / `PaginationLabels` / `FileUploadLabels` / `DescriptionItem` / `ReorderableListLabels` types.
 
 There is no provider to mount and nothing to configure globally. Components
 take what they need as props.
@@ -223,6 +223,30 @@ so values line up. No state, so it renders on the server.
   announces `label` on start and `doneLabel` (「載入完畢」) on finish.
 - `fullPage` renders into `<body>` via a portal and sets `inert` on every other
   child of `<body>`, restoring each afterwards.
+
+### ReorderableList
+
+```tsx
+<ReorderableList
+  label="常見問題排序"
+  items={questions}
+  getKey={(q) => q.id}
+  getLabel={(q) => q.title}
+  onChange={setQuestions}
+/>
+```
+
+- Every row has 上移 / 下移 / 移除 icon buttons named with the item —
+  「上移：WCAG 2.2 新增了哪些準則」. There is no drag, so nothing depends on it.
+- After a move, focus stays on the moved item's same button. A live region
+  says 「已上移，第 2／4 項」, or 「已上移，已抵達第一項」 at an end.
+- At the ends 上移/下移 are `aria-disabled` rather than `disabled`, so the item
+  just moved to the top keeps focus; pressing it there only says 已抵達第一項.
+- Removing moves focus to the next row's 移除, else the previous row's, else
+  the empty state, and announces 「已移除 …」.
+- The moved row's highlight fades, and simply appears under reduced motion.
+- `renderItem` for richer rows; `removable={false}` to hide 移除; strings in
+  `labels`.
 
 ### Pagination
 
@@ -432,6 +456,9 @@ What the story tests actually pin down, beyond "it renders":
 - **LoadingOverlay** — covered content is inert and `aria-busy`, content
   outside is not; focus moves to the panel and back; start and 載入完畢 are
   announced; `fullPage` inerts the rest of `<body>` and restores it.
+- **ReorderableList** — `<ol>` semantics and item-named buttons;
+  `aria-disabled` at the ends; focus kept through moves and an end;
+  announcements; focus after removing the middle, last, and only row.
 - **Pagination** — landmark name, `aria-current`, real `disabled` at both
   ends, focus handed to the current page on reaching an end, the live status
   line, ellipsis slots at the start / middle / end, and link mode with `as`.
