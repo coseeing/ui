@@ -1,9 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
-import { expect, within } from "storybook/test"
+import { useState } from "react"
+import { expect, userEvent, within } from "storybook/test"
 import { Input } from "../Input/Input.js"
 import { Select } from "../Select/Select.js"
 import { Checkbox } from "../Checkbox/Checkbox.js"
-import { Field, Label, ValidationMessage } from "../Field/Field.js"
+import { Field, Label, ValidationMessage, fieldDescribedBy } from "../Field/Field.js"
 import { Button } from "../Button/Button.js"
 
 /**
@@ -101,6 +102,47 @@ export const ValidationMessageRoles: Story = {
     await expect(canvas.getByText("Password updated.")).not.toHaveAttribute(
       "role",
     )
+  },
+}
+
+/**
+ * `htmlFor` gives the hint and the error their ids, so the control can carry
+ * one fixed `aria-describedby={fieldDescribedBy(id)}`. The description follows
+ * the state: the hint while valid, the error once there is one — and the
+ * error is announced, because its region was there all along.
+ */
+export const DescribedByFollowsState: Story = {
+  render: function Render() {
+    const [error, setError] = useState<string>()
+    return (
+      <div className="grid max-w-[40rem] gap-16">
+        <Field label="Email" htmlFor="desc-email" hint="We never share it." error={error}>
+          <Input
+            id="desc-email"
+            type="email"
+            invalid={!!error}
+            aria-describedby={fieldDescribedBy("desc-email")}
+          />
+        </Field>
+        <Button variant="small" theme="dark" onClick={() => setError("That email address is not valid.")}>
+          Validate
+        </Button>
+      </div>
+    )
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const input = canvas.getByLabelText("Email")
+    // Anchored regex: the still-empty error region adds a trailing space in
+    // the test library's computation, which assistive tech ignores.
+    await expect(input).toHaveAccessibleDescription(/^We never share it\.\s*$/)
+
+    await userEvent.click(canvas.getByRole("button", { name: "Validate" }))
+    await expect(input).toHaveAccessibleDescription("That email address is not valid.")
+    await expect(input).toHaveAttribute("aria-invalid", "true")
+    // The described-by target is the live region itself, mounted from the start.
+    const region = document.getElementById("desc-email-error")!
+    await expect(region).toHaveAttribute("aria-live", "polite")
   },
 }
 

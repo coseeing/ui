@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { expect, userEvent, within } from "storybook/test"
 import { Textarea } from "./Textarea.js"
-import { Field } from "../Field/Field.js"
+import { Field, fieldDescribedBy } from "../Field/Field.js"
 
 /**
  * Textarea — NOT in the Figma "Brand" file; SSO gap-fill on brand tokens. The
@@ -67,27 +67,18 @@ export const States: Story = {
 }
 
 /**
- * Inside Field, with the hint wired up through `aria-describedby` and the
- * error state through `invalid`. Field gives its hint and error no id, so the
- * caller supplies one in the node it passes.
+ * Inside Field: `aria-describedby={fieldDescribedBy(id)}` points at the hint
+ * and the error, and `invalid` sets the error state.
  */
 export const WithField: Story = {
   parameters: { layout: "padded" },
   render: () => (
     <div className="grid max-w-[40rem] gap-24">
-      <Field
-        label="自我介紹"
-        htmlFor="bio"
-        hint={<span id="bio-hint">最多 200 字，會顯示在你的公開頁面。</span>}
-      >
-        <Textarea id="bio" aria-describedby="bio-hint" maxLength={200} />
+      <Field label="自我介紹" htmlFor="bio" hint="最多 200 字，會顯示在你的公開頁面。">
+        <Textarea id="bio" aria-describedby={fieldDescribedBy("bio")} maxLength={200} />
       </Field>
-      <Field
-        label="退件原因"
-        htmlFor="reason"
-        error={<span id="reason-error">請填寫退件原因</span>}
-      >
-        <Textarea id="reason" invalid aria-describedby="reason-error" rows={3} />
+      <Field label="退件原因" htmlFor="reason" error="請填寫退件原因">
+        <Textarea id="reason" invalid aria-describedby={fieldDescribedBy("reason")} rows={3} />
       </Field>
     </div>
   ),
@@ -96,7 +87,10 @@ export const WithField: Story = {
 
     const bio = canvas.getByLabelText("自我介紹")
     await expect(bio.tagName).toBe("TEXTAREA")
-    await expect(bio).toHaveAccessibleDescription("最多 200 字，會顯示在你的公開頁面。")
+    // Anchored regex rather than a string: the empty error region joins the
+    // description as a trailing space in the test library's computation,
+    // which assistive tech ignores.
+    await expect(bio).toHaveAccessibleDescription(/^最多 200 字，會顯示在你的公開頁面。\s*$/)
     await expect(bio).toHaveAttribute("maxlength", "200") // native attrs pass through
     await expect(bio).not.toHaveAttribute("aria-invalid")
 

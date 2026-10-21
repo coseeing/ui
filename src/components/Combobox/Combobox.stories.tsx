@@ -2,7 +2,7 @@ import { useState } from "react"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { expect, fireEvent, fn, userEvent, waitFor, within } from "storybook/test"
 import { Combobox, MultiCombobox, type ComboboxOption } from "./Combobox.js"
-import { Field } from "../Field/Field.js"
+import { Field, fieldDescribedBy } from "../Field/Field.js"
 
 /**
  * Combobox / MultiCombobox — design-system extension (not in Figma). A text
@@ -37,21 +37,14 @@ function MultiDemo({
   const [options, setOptions] = useState(args.options ?? TOPICS)
   const [value, setValue] = useState(initial)
   return (
-    <Field
-      label="主題標籤"
-      htmlFor="topics"
-      // Field gives the message no id, so the demo supplies one to point
-      // aria-describedby at.
-      error={error ? <span id="topics-error">{error}</span> : undefined}
-      className="w-[36rem]"
-    >
+    <Field label="主題標籤" htmlFor="topics" error={error} className="w-[36rem]">
       <MultiCombobox
         {...args}
         id="topics"
         options={options}
         value={value}
         invalid={!!error}
-        aria-describedby={error ? "topics-error" : undefined}
+        aria-describedby={fieldDescribedBy("topics")}
         onChange={(next) => {
           setValue(next)
           args.onChange?.(next)

@@ -29,7 +29,7 @@ src/
 | Disclosure & feedback | `Accordion`, `Tabs`, `Dialog`, `Toast`, `ToastRegion`, `Spinner`, `LoadingOverlay` |
 | Icons | 13 brand icons from `Icons` |
 
-Also exported: `cn`, and the `LinkProps` / `AnchorLike` / `TableColumn` /
+Also exported: `cn`, `fieldDescribedBy`, and the `LinkProps` / `AnchorLike` / `TableColumn` /
 `TabItem` / `AccordionEntry` / `ComboboxOption` / `ComboboxLabels` /
 `ComboboxProps` / `MultiComboboxProps` / `PaginationLabels` / `FileUploadLabels` / `DescriptionItem` / `ReorderableListLabels` / `MenuItem` / `MenuTrigger` / `ToastTone` / `ToastEntry` types.
 
@@ -138,14 +138,32 @@ six exports, a mandatory app-root wrapper, a `"use client"` boundary on `Link`
 itself, and implicit action-at-a-distance — to save an app from writing the
 wrapper above once. Props won.
 
+### Field descriptions: `fieldDescribedBy`
+
+Given `htmlFor`, `Field` gives its hint the id `${htmlFor}-hint` and its error
+`${htmlFor}-error`. The error id sits on Field's always-mounted live region,
+so it exists (empty) before any error does. That lets the control carry one
+fixed value:
+
+```tsx
+<Field label="Email" htmlFor="email" hint="We never share it." error={error}>
+  <Input id="email" invalid={!!error} aria-describedby={fieldDescribedBy("email")} />
+</Field>
+```
+
+`fieldDescribedBy("email")` is `"email-hint email-error"`. While valid, the
+description is the hint; once there is an error it is the error (the hint is
+hidden, and a missing id is simply ignored). Field does not inject the
+attribute into its child — the control still says what describes it.
+
 ### Textarea
 
 The `Input` shell, multi-line. `invalid` sets `aria-invalid`; `rows`
 (default 4) and every native textarea attribute pass through.
 
 ```tsx
-<Field label="自我介紹" htmlFor="bio" hint={<span id="bio-hint">最多 200 字</span>}>
-  <Textarea id="bio" aria-describedby="bio-hint" maxLength={200} autoResize />
+<Field label="自我介紹" htmlFor="bio" hint="最多 200 字">
+  <Textarea id="bio" aria-describedby={fieldDescribedBy("bio")} maxLength={200} autoResize />
 </Field>
 ```
 
@@ -384,7 +402,7 @@ For option sets too long for `Select`. Both are controlled: the caller owns
 ```tsx
 const [topics, setTopics] = useState<ComboboxOption[]>([])
 
-<Field label="主題標籤" htmlFor="topics" error={error && <span id="topics-error">{error}</span>}>
+<Field label="主題標籤" htmlFor="topics" error={error}>
   <MultiCombobox
     id="topics"
     options={options}
@@ -397,7 +415,7 @@ const [topics, setTopics] = useState<ComboboxOption[]>([])
       setTopics((t) => [...t, created])
     }}
     invalid={!!error}
-    aria-describedby={error ? "topics-error" : undefined}
+    aria-describedby={fieldDescribedBy("topics")}
   />
 </Field>
 ```
@@ -582,7 +600,8 @@ What the story tests actually pin down, beyond "it renders":
   ends in button mode with focus handed to the current page, the live status
   line, ellipsis slots at the start / middle / end, link mode with `as`, and
   focus kept on an `aria-disabled` 下一頁 through a client-side navigation.
-- **Field** — the error message lands in an always-mounted `aria-live` region
+- **Field** — `fieldDescribedBy` gives the hint while valid and the error
+  once invalid; the error message lands in an always-mounted `aria-live` region
   and does not also carry `role="alert"` (which would announce twice); `error`
   replaces `hint` rather than stacking.
 

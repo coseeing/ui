@@ -26,7 +26,7 @@ export { Pagination } from "./components/Pagination/Pagination.js"
 export type { PaginationLabels } from "./components/Pagination/Pagination.js"
 
 // ── Form primitives ─────────────────────────────────────────────────────────
-export { Field, Label, ValidationMessage } from "./components/Field/Field.js"
+export { Field, Label, ValidationMessage, fieldDescribedBy } from "./components/Field/Field.js"
 export { Input } from "./components/Input/Input.js"
 export { Textarea } from "./components/Textarea/Textarea.js"
 export { Checkbox } from "./components/Checkbox/Checkbox.js"

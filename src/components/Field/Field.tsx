@@ -56,8 +56,24 @@ export function ValidationMessage({
   )
 }
 
+/**
+ * The `aria-describedby` value for the control inside `<Field htmlFor={id}>`:
+ * its hint and its error. Field gives both those ids, and the error one is an
+ * always-mounted (empty until there is an error) live region, so the control
+ * can carry this one fixed value — no branching on whether an error is shown.
+ * When the hint is hidden by an error, its id simply resolves to nothing.
+ *
+ *   <Field label="Email" htmlFor="email" hint="…" error={error}>
+ *     <Input id="email" invalid={!!error} aria-describedby={fieldDescribedBy("email")} />
+ *   </Field>
+ */
+export function fieldDescribedBy(id: string) {
+  return `${id}-hint ${id}-error`
+}
+
 type FieldProps = {
   label?: React.ReactNode
+  /** The control's id. Also gives the hint and error the ids `fieldDescribedBy` returns. */
   htmlFor?: string
   error?: React.ReactNode
   hint?: React.ReactNode
@@ -79,11 +95,18 @@ export function Field({
       {label ? <Label htmlFor={htmlFor}>{label}</Label> : null}
       {children}
       {hint && !error ? (
-        <p className="typography-body2 text-neutral-dark-gray">{hint}</p>
+        <p
+          id={htmlFor ? `${htmlFor}-hint` : undefined}
+          className="typography-body2 text-neutral-dark-gray"
+        >
+          {hint}
+        </p>
       ) : null}
       {/* Always-mounted live region so screen readers reliably announce
-          errors that appear later; the message itself skips role="alert". */}
-      <div aria-live="polite">
+          errors that appear later; the message itself skips role="alert".
+          It carries the error id, so aria-describedby can point at it even
+          while it is empty. */}
+      <div id={htmlFor ? `${htmlFor}-error` : undefined} aria-live="polite">
         {error ? <ValidationMessage announce={false}>{error}</ValidationMessage> : null}
       </div>
     </div>
