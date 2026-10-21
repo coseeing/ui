@@ -363,9 +363,13 @@ With `href` it renders links, and works in a Server Component (no
 
 - `<nav aria-label="分頁">` (override with `label`); the current page has
   `aria-current="page"`; page buttons are named 「第 3 頁」.
-- Previous/next are `disabled` at the ends — in link mode they become a
-  disabled `<button>`, since a link has no disabled state. In button mode,
-  reaching an end moves focus to the new current page instead of dropping it.
+- At the ends, previous/next stop working without dropping focus. In button
+  mode they are `disabled`, and reaching an end moves focus to the new current
+  page. In link mode they stay the same `<a>`, `aria-disabled` and pointing at
+  the current page — so with client-side routing, focus stays on 下一頁 after
+  it takes you to the last page. (Swapping it for a disabled `<button>`, as an
+  earlier version did, replaced the focused element and dropped focus to
+  `<body>`.)
 - The status line 「第 2／10 頁，共 195 筆」 is visible and is a live region
   (`role="status"`), so page changes are announced. `total` is optional.
 - Ellipses keep a fixed number of slots — first, last, current ±
@@ -575,8 +579,9 @@ What the story tests actually pin down, beyond "it renders":
   computed from the browser's colours (so a failure names the tone, the
   surface, and the ratio), on top of axe.
 - **Pagination** — landmark name, `aria-current`, real `disabled` at both
-  ends, focus handed to the current page on reaching an end, the live status
-  line, ellipsis slots at the start / middle / end, and link mode with `as`.
+  ends in button mode with focus handed to the current page, the live status
+  line, ellipsis slots at the start / middle / end, link mode with `as`, and
+  focus kept on an `aria-disabled` 下一頁 through a client-side navigation.
 - **Field** — the error message lands in an always-mounted `aria-live` region
   and does not also carry `role="alert"` (which would announce twice); `error`
   replaces `hint` rather than stacking.

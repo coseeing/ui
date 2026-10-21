@@ -12,9 +12,19 @@ import { Link, type AnchorLike } from "../Link/Link.js"
 // from a Server Component. Button mode (`onPageChange`) is client-only by
 // nature, and attaches its handlers only then.
 //
-// Previous/next are really `disabled` at the ends, not just styled — a link
-// has no disabled state, so in link mode they fall back to a disabled
-// <button>, as Button does.
+// At the ends, previous/next must stop working without dropping focus — the
+// user may have just pressed "下一頁" to reach the last page. Focus is lost
+// when the focused element is replaced *or* disabled, so:
+//
+// - Button mode: they are really `disabled`, and the click that reaches an end
+//   hands focus to the now-current page button first.
+// - Link mode: they stay the same <a> and become aria-disabled, pointing at
+//   the current page. A disabled <button> in their place would be a different
+//   element, and with client-side routing (the page re-renders in place) focus
+//   on "下一頁" would fall to <body>. Swapping to a <button> throughout would
+//   not help either — it would still be disabled at the end, and could not
+//   navigate without script. Pointer clicks are off; Enter re-requests the
+//   page you are on.
 
 export type PaginationLabels = {
   previous: string
@@ -90,7 +100,8 @@ const itemStyles =
 const stepTextStyles = "sr-only tablet:not-sr-only"
 const idleStyles = "cursor-pointer bg-transparent text-teal-700 hover:bg-bg-light-beige"
 const currentStyles = "bg-teal-PRIMARY text-neutral-white"
-const disabledStyles = "cursor-not-allowed bg-transparent text-teal-700 opacity-40"
+const disabledStyles =
+  "cursor-not-allowed bg-transparent text-teal-700 opacity-40 [&[aria-disabled]]:pointer-events-none"
 
 export function Pagination({
   page: rawPage,
@@ -152,14 +163,23 @@ export function Pagination({
         disabled ? disabledStyles : current ? currentStyles : idleStyles,
       ),
     }
-    if (href && !disabled) {
+    if (href) {
       return (
         <Link
           {...shared}
-          href={href(target)}
+          href={href(disabled ? page : target)}
           current={current}
+          aria-disabled={disabled || undefined}
           {...(as ? { as } : {})}
-          onClick={go(target)}
+          // Handlers only where script runs (onPageChange given); on the
+          // server, pointer-events-none keeps the disabled link inert enough.
+          onClick={
+            disabled
+              ? onPageChange
+                ? (e: React.MouseEvent) => e.preventDefault()
+                : undefined
+              : go(target)
+          }
         >
           {children}
         </Link>

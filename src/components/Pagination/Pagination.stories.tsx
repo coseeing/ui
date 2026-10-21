@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { createContext, useContext, useState } from "react"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { expect, fn, userEvent, waitFor, within } from "storybook/test"
 import { Pagination } from "./Pagination.js"
@@ -155,8 +155,8 @@ function RouterLink(props: React.AnchorHTMLAttributes<HTMLAnchorElement> & { hre
 
 /**
  * Link mode: `href` builds each URL and `as` swaps in the router link. At the
- * ends, previous/next fall back to a disabled <button> — a link cannot be
- * disabled.
+ * ends, previous/next stay links — aria-disabled, pointing at the current page
+ * — rather than turning into a different element (see ClientRoutingKeepsFocus).
  */
 export const LinkMode: Story = {
   render: () => (
@@ -175,7 +175,56 @@ export const LinkMode: Story = {
       "href",
       "/articles?page=2",
     )
-    await expect(canvas.getByRole("button", { name: "上一頁" })).toBeDisabled()
-    await expect(canvas.queryByRole("link", { name: "上一頁" })).toBeNull()
+    const previous = canvas.getByRole("link", { name: "上一頁" })
+    await expect(previous).toHaveAttribute("aria-disabled", "true")
+    await expect(previous).toHaveAttribute("href", "/articles?page=1")
+    await expect(getComputedStyle(previous).pointerEvents).toBe("none")
+    await expect(canvas.queryByRole("button")).toBeNull()
+  },
+}
+
+// A minimal client-side router link: navigates by state instead of reloading.
+// Module-level, like a real router's Link — a component type re-created on
+// every render would remount the links and hide the very bug under test.
+const Navigate = createContext<(page: number) => void>(() => {})
+function RoutedLink(props: React.AnchorHTMLAttributes<HTMLAnchorElement> & { href: string }) {
+  const navigate = useContext(Navigate)
+  return (
+    <a
+      {...props}
+      onClick={(e) => {
+        props.onClick?.(e)
+        if (e.defaultPrevented) return
+        e.preventDefault()
+        navigate(Number(new URL(props.href, location.href).searchParams.get("page")))
+      }}
+    />
+  )
+}
+
+/**
+ * Client-side routing re-renders the page in place. Reaching the last page
+ * with 下一頁 must leave focus on 下一頁 — the same <a>, now aria-disabled —
+ * not drop it to <body>, which is what a swap to a disabled <button> did.
+ */
+export const ClientRoutingKeepsFocus: Story = {
+  render: function Render() {
+    const [page, setPage] = useState(4)
+    return (
+      <Navigate.Provider value={setPage}>
+        <Pagination page={page} pageCount={5} href={(p) => `?page=${p}`} as={RoutedLink} />
+      </Navigate.Provider>
+    )
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const next = canvas.getByRole("link", { name: "下一頁" })
+    next.focus()
+    await userEvent.keyboard("{Enter}")
+
+    await expect(canvas.getByRole("status")).toHaveTextContent("第 5／5 頁")
+    await expect(canvas.getByRole("link", { name: "下一頁" })).toBe(next) // same node
+    await expect(next).toHaveAttribute("aria-disabled", "true")
+    await expect(next).toHaveFocus()
   },
 }
