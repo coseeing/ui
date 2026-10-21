@@ -10,11 +10,14 @@ import { PlusIcon } from "../Icons/Icons.js"
 // as chrome, separates it from the page at a glance, and keeps one surface for
 // all four tones so the colour never has to carry contrast on its own.
 //
-// Announcing: prefer ToastRegion, which keeps its live regions mounted and
-// renders each Toast with `announce={false}`. A standalone Toast still carries
-// role="alert" (danger) or role="status" itself, for compatibility — but a
-// region inserted at the same moment as its text is announced unreliably,
-// which is exactly the case for a toast that just appeared.
+// The card has no role="alert" / role="status" of its own. A toast appears at
+// runtime, and a live region inserted together with its text is announced
+// unreliably — often not at all for role="status" in VoiceOver. Announcing is
+// the job of a region that already exists: ToastRegion keeps two mounted
+// (assertive for danger, polite for the rest) and writes each toast's text
+// into one. Rendering a Toast outside ToastRegion is fine for static content,
+// but it will not be announced; put it in your own always-mounted region if
+// it must be.
 
 export type ToastTone = "info" | "success" | "warning" | "danger"
 
@@ -34,11 +37,6 @@ type ToastProps = {
   onClose?: () => void
   /** Accessible name for the close button. */
   closeLabel?: string
-  /**
-   * Set false inside an always-mounted live region (as ToastRegion does), so
-   * the card does not also carry a role of its own and announce twice.
-   */
-  announce?: boolean
   /** Lets ToastRegion find the close button to move focus to. */
   closeRef?: React.Ref<HTMLButtonElement>
   className?: string
@@ -50,13 +48,11 @@ export function Toast({
   message,
   onClose,
   closeLabel = "關閉通知",
-  announce = true,
   closeRef,
   className,
 }: ToastProps) {
   return (
     <div
-      role={announce ? (tone === "danger" ? "alert" : "status") : undefined}
       className={cn(
         "flex w-full max-w-[40rem] items-start gap-12 rounded-[1.2rem] bg-teal-PRIMARY px-20 py-16 shadow-[0_0.8rem_2.4rem_rgb(16_36_42_/_0.24)]",
         onClose && "pr-12",

@@ -314,10 +314,12 @@ notify({ tone: "success", title: "已儲存", message: "你的變更已儲存。
 - Timers pause while the pointer is over the region or focus is inside it.
 - Every toast has a close button (「關閉通知」, `closeLabel`). Closing moves
   focus to the next toast, or back to where it was before entering the region.
-- `Toast` on its own gained `onClose`/`closeLabel` and `announce` (set it to
-  `false` inside your own live region). A standalone `Toast` still has
-  `role="alert"`/`"status"`, which is unreliable for one that appears at
-  runtime — use the region for those.
+- `Toast` itself no longer has `role="alert"` / `role="status"`. Those made
+  each toast a live region inserted together with its text, which screen
+  readers announce unreliably (VoiceOver often skips `status` entirely). It
+  gained `onClose`/`closeLabel`. A `Toast` rendered outside `ToastRegion` is
+  not announced — fine for static content; for anything that appears at
+  runtime, use the region or your own always-mounted live region.
 
 ### Badge tones
 
@@ -563,7 +565,8 @@ What the story tests actually pin down, beyond "it renders":
   Home/End and typeahead; activation returns focus; disabled items are
   reachable and inert; Esc, Tab and outside-click close; the viewport flip;
   icon-only naming.
-- **Toast / ToastRegion** — the close button and `closeLabel`; `announce`;
+- **Toast / ToastRegion** — the close button and `closeLabel`; no tone gives
+  the card a live-region role of its own;
   live regions present before any toast, danger to the assertive one and the
   rest polite, no role on the cards; `max` with queued toasts announced as
   they appear; auto-dismiss paused by hover and by focus; danger stays; focus

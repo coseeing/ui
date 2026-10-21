@@ -6,10 +6,10 @@ import { Toast } from "./Toast.js"
  * Toast — design-system extension (not in Figma). Dark teal card with a tone
  * dot; an optional close button (`onClose`, named by `closeLabel`).
  *
- * For anything that appears at runtime, render toasts through
- * **ToastRegion**: its live regions are always mounted, so announcements are
- * reliable, and it handles placement, `max`, and auto-dismiss. A standalone
- * Toast still carries `role="alert"` (danger) / `role="status"` itself.
+ * The card has no live-region role of its own: a region inserted together with
+ * its text is announced unreliably. Render runtime toasts through
+ * **ToastRegion**, whose live regions are always mounted, and which handles
+ * placement, `max`, and auto-dismiss.
  */
 const meta = {
   title: "Components/Toast",
@@ -70,9 +70,20 @@ export const WithCloseButton: Story = {
   },
 }
 
-/** `announce={false}` drops the card's own role, for use inside a live region. */
-export const WithoutOwnRole: Story = {
-  args: { announce: false, tone: "danger", title: "儲存失敗" },
+/**
+ * No tone gives the card a role="alert" / role="status" of its own — not even
+ * danger. That would be a live region inserted at the same moment as its
+ * text, which screen readers announce unreliably; ToastRegion's always-mounted
+ * regions do the announcing instead.
+ */
+export const NoLiveRegionOfItsOwn: Story = {
+  render: (args) => (
+    <div className="grid gap-12">
+      {(["info", "success", "warning", "danger"] as const).map((tone) => (
+        <Toast key={tone} {...args} tone={tone} />
+      ))}
+    </div>
+  ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(canvas.queryByRole("alert")).toBeNull()

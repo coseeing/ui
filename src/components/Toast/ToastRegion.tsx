@@ -171,7 +171,6 @@ export function ToastRegion({
           tone={t.tone}
           title={t.title}
           message={t.message}
-          announce={false}
           closeLabel={closeLabel}
           onClose={() => close(i)}
           closeRef={(el) => {
