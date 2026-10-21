@@ -398,9 +398,11 @@ const [topics, setTopics] = useState<ComboboxOption[]>([])
 
 `<Combobox>` takes the same props with `value: ComboboxOption | null`.
 
-- Keyboard follows the APG combobox pattern: ↑/↓ open and move, Home/End jump
-  while an option is highlighted, Enter commits, Esc closes and a second Esc
-  clears. Enter is ignored during IME composition, so committing a 注音/倉頡
+- Keyboard follows the APG combobox pattern: ↑/↓ open and move (wrapping),
+  Enter commits, Esc closes and a second Esc clears. Home/End and ←/→ are
+  text-editing keys: with an option highlighted they clear the highlight (the
+  popup stays open) and move the caret, rather than jumping through the list.
+  Enter is ignored during IME composition, so committing a 注音/倉頡
   candidate never selects an option.
 - Nothing is pre-selected: the first match is highlighted but not written into
   the input.
@@ -541,7 +543,8 @@ What the story tests actually pin down, beyond "it renders":
 - **Checkbox** — clicking the label text toggles the box, which only works if
   the `htmlFor`/`id` pairing holds.
 - **Combobox** — APG wiring (`aria-controls`, `aria-activedescendant`), no
-  pre-selection, ↑/↓ wrap, Home/End, double Esc, Enter ignored during IME
+  pre-selection, ↑/↓ wrap, Home/End and ←/→ clearing the highlight and moving
+  the caret, double Esc, Enter ignored during IME
   composition, create, multi toggle, focus after removing an item, and the
   persistent result-count live region.
 - **FileUpload** — the trigger is a named `<button>` and the native input is

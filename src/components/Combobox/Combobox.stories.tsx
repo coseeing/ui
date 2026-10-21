@@ -10,9 +10,9 @@ import { Field } from "../Field/Field.js"
  *
  * APG "Combobox with listbox popup": focus stays in the input, the highlighted
  * option is tracked with `aria-activedescendant`, and nothing is selected until
- * Enter or a click. ↑/↓ move (and open), Home/End jump while an option is
- * highlighted, Esc closes and a second Esc clears. Enter is ignored during IME
- * composition. A persistent live region announces the match count.
+ * Enter or a click. ↑/↓ move (and open); Home/End and ←/→ edit the text and
+ * clear any highlight; Esc closes and a second Esc clears. Enter is ignored
+ * during IME composition. A persistent live region announces the match count.
  */
 
 const TOPICS: ComboboxOption[] = [
@@ -191,7 +191,7 @@ export const SelectsWithKeyboard: Story = {
   },
 }
 
-/** ↑/↓ wrap, Home/End jump, Esc closes and a second Esc clears. */
+/** ↑/↓ wrap, Esc closes and a second Esc clears. */
 export const KeyboardNavigation: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
@@ -206,10 +206,7 @@ export const KeyboardNavigation: Story = {
     await expect(activeLabel()).toBe("WCAG") // wraps
     await userEvent.keyboard("{ArrowUp}")
     await expect(activeLabel()).toBe("語音辨識") // wraps back
-    await userEvent.keyboard("{Home}")
-    await expect(activeLabel()).toBe("WCAG")
-    await userEvent.keyboard("{End}")
-    await expect(activeLabel()).toBe("語音辨識")
+    await userEvent.keyboard("{Escape}")
 
     await userEvent.keyboard("ar")
     await userEvent.keyboard("{Escape}")
@@ -217,6 +214,34 @@ export const KeyboardNavigation: Story = {
     await expect(input).toHaveValue("ar")
     await userEvent.keyboard("{Escape}")
     await expect(input).toHaveValue("")
+  },
+}
+
+/**
+ * APG, editable combobox: Home/End and ←/→ are text-editing keys. With an
+ * option highlighted they clear the highlight (back to the input, popup still
+ * open) and move the caret — they do not jump through the list.
+ */
+export const EditingKeysReturnToInput: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const input = canvas.getByRole<HTMLInputElement>("combobox", { name: "主題標籤" })
+
+    input.focus()
+    await userEvent.keyboard("a")
+    for (const [key, caret] of [
+      ["{Home}", 0],
+      ["{End}", 1],
+      ["{ArrowLeft}", 0],
+      ["{ArrowRight}", 1],
+    ] as const) {
+      await userEvent.keyboard("{ArrowDown}")
+      await expect(input).toHaveAttribute("aria-activedescendant")
+      await userEvent.keyboard(key)
+      await expect(input).not.toHaveAttribute("aria-activedescendant")
+      await expect(input).toHaveAttribute("aria-expanded", "true")
+      await expect(input.selectionStart).toBe(caret)
+    }
   },
 }
 

@@ -317,11 +317,13 @@ function ComboboxBase({
         break
       case "Home":
       case "End":
-        // Only while an option is highlighted; otherwise they move the caret.
-        if (activeIndex >= 0) {
-          e.preventDefault()
-          setActive(e.key === "Home" ? 0 : rows.length - 1)
-        }
+      case "ArrowLeft":
+      case "ArrowRight":
+        // APG, editable combobox: these are text-editing keys. With an
+        // option highlighted they hand "focus" back to the input — the
+        // highlight clears, the popup stays open — and the caret moves as
+        // it normally would, so no preventDefault.
+        if (activeIndex >= 0) setActive(-1)
         break
       case "Enter": {
         if (!open) break
