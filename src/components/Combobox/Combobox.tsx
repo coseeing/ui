@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useId, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
+import { LiveRegion, useAnnouncer } from "../LiveRegion/LiveRegion.js"
 import { cn } from "../../lib/cn.js"
 import { ChevronDownIcon, PlusIcon } from "../Icons/Icons.js"
 
@@ -60,21 +61,39 @@ const DEFAULT_LABELS: ComboboxLabels = {
 }
 
 /**
- * A one-off message for the live region. `n` changes on every notice, so the
- * same text twice in a row (select, deselect, select) is still a change.
+ * One live region (LiveRegion: always mounted, text cleared after a few
+ * seconds) carrying two kinds of message:
+ *
+ * - Action notices — 已選取 WCAG, 已移除 WCAG. Without them a screen reader
+ *   user hears nothing after Enter and cannot tell the action happened. A
+ *   notice holds the region until the user types again: the action usually
+ *   clears the query, and the count for that empty query would otherwise
+ *   replace the notice half a second later.
+ * - The result count, debounced by the caller; skipped while a notice holds.
  */
-type Notice = { text: string; n: number }
-
-/**
- * Action notices — "已選取 WCAG", "已移除 WCAG" — for the live region. Without
- * them a screen reader user hears nothing after Enter, or only the count of
- * the now-cleared query, and cannot tell the action happened.
- */
-function useNotice() {
-  const [notice, setNotice] = useState<Notice | null>(null)
-  const say = (text: string) => setNotice((prev) => ({ text, n: (prev?.n ?? 0) + 1 }))
-  return { notice, say, clear: () => setNotice(null) }
+function useComboboxAnnouncer() {
+  const { message, say, clear } = useAnnouncer()
+  const held = useRef(false)
+  return {
+    message,
+    notice: useCallback(
+      (text: string) => {
+        held.current = true
+        say(text)
+      },
+      [say],
+    ),
+    count: useCallback((text: string) => !held.current && say(text), [say]),
+    clearCount: useCallback(() => !held.current && clear(), [clear]),
+    /** The user typed: release the hold and drop whatever was said. */
+    release: useCallback(() => {
+      held.current = false
+      clear()
+    }, [clear]),
+  }
 }
+
+type ComboboxAnnouncer = ReturnType<typeof useComboboxAnnouncer>
 
 /**
  * After `onCreate` resolves, checks whether the caller also put the new option
@@ -172,9 +191,7 @@ type BaseProps = Omit<SharedProps, "className"> & {
   isSelected: (option: ComboboxOption) => boolean
   onSelect: (option: ComboboxOption) => void
   onCreated: (label: string) => void
-  /** Takes precedence over the result count until the user types again. */
-  notice: Notice | null
-  onType: () => void
+  announcer: ComboboxAnnouncer
   /** Escape with the popup already closed. */
   onClear: () => void
   /** Focus left the combobox. */
@@ -205,8 +222,7 @@ function ComboboxBase({
   isSelected,
   onSelect,
   onCreated,
-  notice,
-  onType,
+  announcer,
   onClear,
   onLeave,
 }: BaseProps) {
@@ -360,21 +376,21 @@ function ComboboxBase({
   }
   const message = open && (loading || matches.length === 0) ? status : ""
 
-  // What the live region actually says. Updating it on every keystroke made
-  // VoiceOver read stale counts: it speaks the typed character first, so by
-  // the time it reached the region the text had moved on, and it would say
-  // "2 個結果" for a query that now matched nothing. Announce only once input
-  // settles, and never mid-composition, when the text is still 注音 like ㄨˊ.
-  const [announcement, setAnnouncement] = useState("")
+  // The count is announced once input settles. Updating it on every keystroke
+  // made VoiceOver read stale counts: it speaks the typed character first, so
+  // by the time it reached the region the text had moved on, and it would say
+  // "2 個結果" for a query that now matched nothing. Never mid-composition
+  // either, when the text is still 注音 like ㄨˊ.
+  const { count, clearCount } = announcer
   useEffect(() => {
     if (!status) {
-      setAnnouncement("")
+      clearCount()
       return
     }
     if (composing) return
-    const timer = setTimeout(() => setAnnouncement(status), ANNOUNCE_DELAY)
+    const timer = setTimeout(() => count(status), ANNOUNCE_DELAY)
     return () => clearTimeout(timer)
-  }, [status, composing])
+  }, [status, composing, count, clearCount])
 
   return (
     <div
@@ -404,10 +420,8 @@ function ComboboxBase({
         placeholder={placeholder}
         value={inputValue}
         onChange={(e) => {
-          // Drop the last notice and the last count together, so neither is
-          // re-read when the region falls back to the (debounced) count.
-          setAnnouncement("")
-          onType()
+          // Drop the last notice or count, and let counts through again.
+          announcer.release()
           onQueryChange(e.target.value)
           setOpen(true)
           setActive(-1)
@@ -486,12 +500,7 @@ function ComboboxBase({
         ) : null}
       </div>
 
-      {/* Always mounted, so the count is announced as it changes rather than
-          depending on a region inserted at the same moment as its text.
-          Debounced: see `announcement`. */}
-      <div role="status" className="sr-only">
-        {notice ? <span key={notice.n}>{notice.text}</span> : announcement}
-      </div>
+      <LiveRegion message={announcer.message} />
     </div>
   )
 }
@@ -515,10 +524,10 @@ function CheckMark() {
 export function Combobox({ value, onChange, ...props }: ComboboxProps) {
   const l = { ...DEFAULT_LABELS, ...props.labels }
   const inputRef = useRef<HTMLInputElement>(null)
-  const { notice, say, clear } = useNotice()
+  const announcer = useComboboxAnnouncer()
   const announceCreated = useCreatedNotice(
     (label) => !!value && sameLabel(value.label, label),
-    say,
+    announcer.notice,
     l,
   )
   const [query, setQuery] = useState("")
@@ -546,14 +555,13 @@ export function Combobox({ value, onChange, ...props }: ComboboxProps) {
       onSelect={(o) => {
         onChange(o)
         reset()
-        say(l.announceSelect(o.label))
+        announcer.notice(l.announceSelect(o.label))
       }}
       onCreated={(label) => {
         reset()
         announceCreated(label)
       }}
-      notice={notice}
-      onType={clear}
+      announcer={announcer}
       onClear={() => {
         reset()
         if (value) onChange(null)
@@ -584,10 +592,10 @@ export function MultiCombobox({
   const inputRef = useRef<HTMLInputElement>(null)
   const removeRefs = useRef(new Map<string, HTMLButtonElement>())
   const [query, setQuery] = useState("")
-  const { notice, say, clear } = useNotice()
+  const announcer = useComboboxAnnouncer()
   const announceCreated = useCreatedNotice(
     (label) => value.some((o) => sameLabel(o.label, label)),
-    say,
+    announcer.notice,
     l,
   )
 
@@ -607,7 +615,7 @@ export function MultiCombobox({
   const remove = (index: number) => {
     pendingFocus.current = value[index + 1]?.value ?? null
     onChange(value.filter((_, i) => i !== index))
-    say(l.announceRemove(value[index]!.label))
+    announcer.notice(l.announceRemove(value[index]!.label))
   }
 
   return (
@@ -651,14 +659,13 @@ export function MultiCombobox({
           const was = selected.has(o.value)
           onChange(was ? value.filter((v) => v.value !== o.value) : [...value, o])
           setQuery("")
-          say(was ? l.announceDeselect(o.label) : l.announceSelect(o.label))
+          announcer.notice(was ? l.announceDeselect(o.label) : l.announceSelect(o.label))
         }}
         onCreated={(label) => {
           setQuery("")
           announceCreated(label)
         }}
-        notice={notice}
-        onType={clear}
+        announcer={announcer}
         onClear={() => setQuery("")}
         onLeave={() => setQuery("")}
       />

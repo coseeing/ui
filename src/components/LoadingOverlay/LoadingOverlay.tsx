@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react"
 import { createPortal } from "react-dom"
+import { LiveRegion, useAnnouncer } from "../LiveRegion/LiveRegion.js"
 import { cn } from "../../lib/cn.js"
 import { SpinnerRing } from "../Spinner/Spinner.js"
 
@@ -51,18 +52,26 @@ export function LoadingOverlay({
   const portalRef = useRef<HTMLDivElement>(null)
   const restoreFocus = useRef<HTMLElement | null>(null)
 
-  // Announce on transitions only — nothing on a mount that starts inactive.
-  const [message, setMessage] = useState(active ? label : "")
-  const wasActive = useRef(active)
-  useEffect(() => {
-    if (active === wasActive.current) return
-    wasActive.current = active
-    setMessage(active ? label : doneLabel)
-  }, [active, label, doneLabel])
-
   // The portal target only exists in the browser.
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
+
+  // Announce on transitions. Mounting already active counts as one; mounting
+  // inactive says nothing. Waits for `mounted`, so the (portalled) region is
+  // in the page, empty, before its first text arrives.
+  const { message, say } = useAnnouncer()
+  const wasActive = useRef<boolean | null>(null)
+  useEffect(() => {
+    if (!mounted) return
+    if (wasActive.current === null) {
+      wasActive.current = active
+      if (active) say(label)
+      return
+    }
+    if (active === wasActive.current) return
+    wasActive.current = active
+    say(active ? label : doneLabel)
+  }, [active, mounted, label, doneLabel, say])
 
   // Full page: make every other child of <body> inert while active.
   useEffect(() => {
@@ -124,11 +133,7 @@ export function LoadingOverlay({
     </div>
   ) : null
 
-  const region = (
-    <div role="status" className="sr-only">
-      {message}
-    </div>
-  )
+  const region = <LiveRegion message={message} />
 
   if (fullPage) {
     return mounted

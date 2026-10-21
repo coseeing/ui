@@ -18,7 +18,7 @@ src/
 
 ## What's in it
 
-27 primitives, all framework-agnostic:
+28 primitives, all framework-agnostic:
 
 | Group | Components |
 | --- | --- |
@@ -26,12 +26,12 @@ src/
 | Actions & nav | `Button`, `Link`, `Menu`, `Pagination` |
 | Form | `Field`, `Label`, `ValidationMessage`, `Input`, `Textarea`, `Checkbox`, `Select`, `FileUpload`, `Combobox`, `MultiCombobox` |
 | Data | `Badge`, `Tag`, `Table`, `DescriptionList`, `ReorderableList` |
-| Disclosure & feedback | `Accordion`, `Tabs`, `Dialog`, `Toast`, `ToastRegion`, `Spinner`, `LoadingOverlay` |
+| Disclosure & feedback | `Accordion`, `Tabs`, `Dialog`, `Toast`, `ToastRegion`, `LiveRegion`, `Spinner`, `LoadingOverlay` |
 | Icons | 13 brand icons from `Icons` |
 
-Also exported: `cn`, `fieldDescribedBy`, and the `LinkProps` / `AnchorLike` / `TableColumn` /
+Also exported: `cn`, `fieldDescribedBy`, `useAnnouncer`, and the `LinkProps` / `AnchorLike` / `TableColumn` /
 `TabItem` / `AccordionEntry` / `ComboboxOption` / `ComboboxLabels` /
-`ComboboxProps` / `MultiComboboxProps` / `PaginationLabels` / `FileUploadLabels` / `DescriptionItem` / `ReorderableListLabels` / `MenuItem` / `MenuTrigger` / `ToastTone` / `ToastEntry` types.
+`ComboboxProps` / `MultiComboboxProps` / `PaginationLabels` / `FileUploadLabels` / `DescriptionItem` / `ReorderableListLabels` / `MenuItem` / `MenuTrigger` / `ToastTone` / `ToastEntry` / `Announcement` types.
 
 There is no provider to mount and nothing to configure globally. Components
 take what they need as props.
@@ -302,6 +302,32 @@ control: to pick a value, use `Select` or `Combobox`.
 - The trigger takes any Button `variant`/`theme`. The popup flips to the
   trigger's other edge when `placement` would overflow the viewport.
 
+### Announcements: `LiveRegion` and `useAnnouncer`
+
+For telling screen reader users something that has no other voice — 已儲存,
+已複製連結:
+
+```tsx
+const { message, say } = useAnnouncer()
+
+<Button onClick={async () => { await copyLink(); say("已複製連結") }}>複製連結</Button>
+<LiveRegion message={message} />            // render it always, unconditionally
+```
+
+- The region is mounted up front and empty; `say()` only changes its text. A
+  `role="status"`/`"alert"` inserted together with its message is announced
+  unreliably, which is why nothing in this package does that any more.
+- The text is cleared after 7s (`useAnnouncer({ clearAfter })`, React Aria's
+  default). The region is visually hidden, so its text duplicates something
+  on screen; left in place, someone browsing with the virtual cursor would
+  meet it twice. Clearing is silent and does not cut off an announcement.
+- The same text twice in a row is still announced.
+- `politeness="assertive"` (`role="alert"`) interrupts — keep it for errors.
+
+Combobox, FileUpload, ReorderableList, LoadingOverlay and ToastRegion announce
+through it. Visible live text — Field's error, Pagination's status line — is
+the content itself, not a copy, so it is not cleared.
+
 ### Toasts: `ToastRegion`
 
 The app owns the list; the region decides where, how many, and how long.
@@ -323,10 +349,11 @@ const notify = (t: Omit<ToastEntry, "id">) =>
 notify({ tone: "success", title: "已儲存", message: "你的變更已儲存。" })
 ```
 
-- Its two live regions are always mounted, before any toast exists:
+- Its two live regions (`LiveRegion`) are always mounted, before any toast exists:
   `danger` is written to the assertive one, everything else to the polite
   one. The cards carry no role of their own, so nothing is announced twice
-  and nothing depends on a region inserted together with its text.
+  and nothing depends on a region inserted together with its text. The
+  region text is cleared after 7s, so browsing later finds each toast once.
 - Danger toasts stay until closed unless given a `duration`; an error should
   not vanish unread.
 - Timers pause while the pointer is over the region or focus is inside it.
@@ -451,8 +478,8 @@ const [topics, setTopics] = useState<ComboboxOption[]>([])
 
 The build preserves the module graph, so `"use client"` stays on just the
 files that actually need it — `Dialog`, `Tabs`, `Combobox`, `FileUpload`,
-`LoadingOverlay`, `ReorderableList`, `Menu`, and `ToastRegion`, the only
-components with state. Everything else, including `Link` and `Button`, renders on the server.
+`LoadingOverlay`, `ReorderableList`, `Menu`, `ToastRegion`, and
+`LiveRegion`, the only components with state. Everything else, including `Link` and `Button`, renders on the server.
 Importing `Button` does not drag `Table` into the bundle.
 
 ESM only. Every current bundler and Node ≥ 18 handles it; there is no CJS build.
@@ -596,6 +623,8 @@ What the story tests actually pin down, beyond "it renders":
 - **Badge** — every tone on all three brand surfaces, with the contrast ratio
   computed from the browser's colours (so a failure names the tone, the
   surface, and the ratio), on top of axe.
+- **LiveRegion** — mounted empty, `say()` fills it, the same text twice is a
+  new node (announced again), and the text clears after `clearAfter`.
 - **Pagination** — landmark name, `aria-current`, real `disabled` at both
   ends in button mode with focus handed to the current page, the live status
   line, ellipsis slots at the start / middle / end, link mode with `as`, and

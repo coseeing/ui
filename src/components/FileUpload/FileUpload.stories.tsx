@@ -172,7 +172,7 @@ export const BrokenImage: Story = {
     const trigger = canvas.getByRole("button", { name: "封面圖片，重新選取" })
 
     await waitFor(() => expect(trigger).toHaveAccessibleDescription("圖片無法載入"))
-    await expect(canvas.getByRole("status")).toHaveTextContent("圖片無法載入")
+    await waitFor(() => expect(canvas.getByRole("status")).toHaveTextContent("圖片無法載入"))
     await expect(canvas.queryByRole("img")).toBeNull()
     await expect(canvas.getByRole("button", { name: "刪除圖片" })).toBeVisible()
   },

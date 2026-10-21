@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useId, useRef, useState } from "react"
+import { LiveRegion, useAnnouncer } from "../LiveRegion/LiveRegion.js"
 import { cn } from "../../lib/cn.js"
 import { PlusIcon } from "../Icons/Icons.js"
 
@@ -122,9 +123,9 @@ export function FileUpload({
   const inputRef = useRef<HTMLInputElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
 
-  // Announcements happen only in response to the user, never on mount.
-  const [notice, setNotice] = useState<{ text: string; n: number } | null>(null)
-  const say = (text: string) => setNotice((prev) => ({ text, n: (prev?.n ?? 0) + 1 }))
+  // Announcements happen only in response to the user (or a preview failing
+  // to load), never on mount.
+  const { message, say } = useAnnouncer()
 
   const [dragging, setDragging] = useState(false)
   const [rejected, setRejected] = useState(false)
@@ -145,6 +146,10 @@ export function FileUpload({
   // Keyed on the src that failed, so a new value clears the error by itself.
   const [failedSrc, setFailedSrc] = useState<string>()
   const loadFailed = !!src && failedSrc === src
+  useEffect(() => {
+    if (loadFailed) say(l.loadError)
+    // Once per failure; the label is not a reason to say it again.
+  }, [loadFailed, say])
 
   // The <label> text, if the trigger is paired with one (e.g. via Field). It
   // is folded into the button's name so the name says both what the field is
@@ -281,11 +286,7 @@ export function FileUpload({
         }}
       />
 
-      {/* Always mounted; see Field for why the region must predate its text. */}
-      <div role="status" className="sr-only">
-        {notice ? <span key={notice.n}>{notice.text}</span> : null}
-        {loadFailed ? <span>{l.loadError}</span> : null}
-      </div>
+      <LiveRegion message={message} />
     </div>
   )
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { LiveRegion, useAnnouncer } from "../LiveRegion/LiveRegion.js"
 import { cn } from "../../lib/cn.js"
 import { ChevronDownIcon, PlusIcon } from "../Icons/Icons.js"
 
@@ -86,8 +87,7 @@ export function ReorderableList<T>({
   const buttons = useRef(new Map<string, HTMLButtonElement>())
   const emptyRef = useRef<HTMLParagraphElement>(null)
 
-  const [notice, setNotice] = useState<{ text: string; n: number } | null>(null)
-  const say = (text: string) => setNotice((prev) => ({ text, n: (prev?.n ?? 0) + 1 }))
+  const { message, say } = useAnnouncer()
 
   // The row just moved, for a brief highlight (skipped under reduced motion,
   // where it simply appears without the fade).
@@ -212,9 +212,7 @@ export function ReorderableList<T>({
           })}
         </ol>
       )}
-      <div role="status" className="sr-only">
-        {notice ? <span key={notice.n}>{notice.text}</span> : null}
-      </div>
+      <LiveRegion message={message} />
     </div>
   )
 }

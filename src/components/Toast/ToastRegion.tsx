@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { LiveRegion, useAnnouncer } from "../LiveRegion/LiveRegion.js"
 import { cn } from "../../lib/cn.js"
 import { Toast, type ToastTone } from "./Toast.js"
 
@@ -72,11 +73,10 @@ export function ToastRegion({
   const returnFocus = useRef<HTMLElement | null>(null)
 
   // ── Announcements: each toast once, when it becomes visible ──────────────
-  // `n` makes the same text twice in a row (two 已儲存 toasts) a change.
-  type Notice = { text: string; n: number } | null
-  const [polite, setPolite] = useState<Notice>(null)
-  const [assertive, setAssertive] = useState<Notice>(null)
-  const next = (text: string) => (prev: Notice) => ({ text, n: (prev?.n ?? 0) + 1 })
+  // The region text duplicates the card, so it is cleared again after a few
+  // seconds (see LiveRegion) — browsing the page later finds the card once.
+  const polite = useAnnouncer()
+  const assertive = useAnnouncer()
   const announced = useRef(new Set<string>())
   const visibleIds = visible.map((t) => t.id).join("\n")
   useEffect(() => {
@@ -85,8 +85,8 @@ export function ToastRegion({
     fresh.forEach((t) => announced.current.add(t.id))
     const urgent = fresh.filter((t) => t.tone === "danger").map(textOf)
     const calm = fresh.filter((t) => t.tone !== "danger").map(textOf)
-    if (urgent.length) setAssertive(next(urgent.join("。")))
-    if (calm.length) setPolite(next(calm.join("。")))
+    if (urgent.length) assertive.say(urgent.join("。"))
+    if (calm.length) polite.say(calm.join("。"))
     // Keyed on the ids: re-renders with the same toasts announce nothing.
   }, [visibleIds])
 
@@ -180,12 +180,8 @@ export function ToastRegion({
           className="pointer-events-auto"
         />
       ))}
-      <div role="status" className="sr-only">
-        {polite ? <span key={polite.n}>{polite.text}</span> : null}
-      </div>
-      <div role="alert" className="sr-only">
-        {assertive ? <span key={assertive.n}>{assertive.text}</span> : null}
-      </div>
+      <LiveRegion message={polite.message} />
+      <LiveRegion message={assertive.message} politeness="assertive" />
     </section>
   )
 }
