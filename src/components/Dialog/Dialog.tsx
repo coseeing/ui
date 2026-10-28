@@ -70,13 +70,12 @@ export function Dialog({
       {/* No orange accent bar: Card dropped it, and a dialog is the same
           surface. Padding and type scale track Card's header.
           Bottom padding depends on what follows: 16 before a body (the gap
-          between heading and content), but the same as the top when the
-          header is all there is above the footer — a fixed pb-16 there left
-          16px under the text against 20/24 above it, visibly bottom-heavy. */}
+          between heading and content); 16/20 before inline actions (see
+          below); the same as the top when the header is all there is. */}
       <div
         className={cn(
           "grid gap-4 px-20 pt-20 tablet:px-24 tablet:pt-24",
-          children ? "pb-16" : "pb-20 tablet:pb-24",
+          children ? "pb-16" : actions ? "pb-16 tablet:pb-20" : "pb-20 tablet:pb-24",
         )}
       >
         <div className="flex items-start justify-between gap-16">
@@ -101,10 +100,26 @@ export function Dialog({
         <div className="px-20 pb-20 tablet:px-24 tablet:pb-24">{children}</div>
       ) : null}
 
-      {/* Flush footer bar, matching FlowForm's submitLayout="footer" — the
-          established place for a card's actions in this app. */}
+      {/* With a body: a flush footer bar, matching FlowForm's
+          submitLayout="footer" — the established place for a card's actions
+          in this app, and it separates the actions from the content.
+          Without one (a confirmation: title, a sentence, buttons) the bar was
+          as tall as everything above it and made the dialog bottom-heavy, so
+          the actions sit in the white panel instead.
+          Their spacing is tighter than the top padding on purpose: 16/20
+          above and below the buttons against 20/24 above the title. Bordered
+          buttons show every pixel of white below them, while the title's
+          line box adds ~7px of half-leading above its glyphs — so equal
+          numbers (24/24) still read as an empty bottom. */}
       {actions ? (
-        <div className="flex flex-wrap items-center justify-end gap-12 border-t border-bg-warm-gray bg-bg-light-off-white px-20 py-16 tablet:px-24">
+        <div
+          className={cn(
+            "flex flex-wrap items-center justify-end gap-12 px-20 tablet:px-24",
+            children
+              ? "border-t border-bg-warm-gray bg-bg-light-off-white py-16"
+              : "pb-16 tablet:pb-20",
+          )}
+        >
           {actions}
         </div>
       ) : null}
