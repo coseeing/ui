@@ -345,3 +345,22 @@ export const ManagedInsideModalDialog: Story = {
     await waitFor(() => expect(stack()).toBeNull())
   },
 }
+
+/**
+ * Stacks at different positions are separate region landmarks with distinct
+ * names, so a landmark list does not read 通知, 通知.
+ */
+export const ManagedDistinctStackNames: Story = {
+  parameters: { layout: "fullscreen" },
+  render: () => (
+    <>
+      <Toast open onClose={() => {}} autoHide={null} title="已儲存" />
+      <Toast open onClose={() => {}} autoHide={null} title="已同步" position="bottom-right" />
+    </>
+  ),
+  play: async () => {
+    const page = within(document.body)
+    await waitFor(() => expect(page.getByRole("region", { name: "通知" })).toBeVisible())
+    await expect(page.getByRole("region", { name: "通知（右下）" })).toBeVisible()
+  },
+}

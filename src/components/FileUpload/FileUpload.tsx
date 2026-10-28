@@ -120,6 +120,7 @@ export function FileUpload({
   const generatedId = useId()
   const triggerId = id ?? generatedId
   const errorId = `${triggerId}-error`
+  const fileId = `${triggerId}-file`
   const inputRef = useRef<HTMLInputElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
 
@@ -155,10 +156,13 @@ export function FileUpload({
   // is folded into the button's name so the name says both what the field is
   // and what the button does — "封面圖片，選擇圖片" — instead of the label
   // replacing the action, which is what <label for> on a button does.
+  // Re-read after every render (setting state only on a change), so a label
+  // that changes later — a locale switch — does not leave a stale name.
   const [labelText, setLabelText] = useState<string>()
   useEffect(() => {
-    setLabelText(triggerRef.current?.labels?.[0]?.textContent ?? undefined)
-  }, [])
+    const text = triggerRef.current?.labels?.[0]?.textContent ?? undefined
+    if (text !== labelText) setLabelText(text)
+  })
 
   const hasValue = value !== null && value !== ""
   const name = hasValue ? (nameOf(value) ?? l.current) : undefined
@@ -220,6 +224,7 @@ export function FileUpload({
 
       <div className="grid min-w-0 flex-1 gap-8">
         <p
+          id={fileId}
           className={cn(
             "typography-body2 m-0 truncate",
             hasValue ? "text-teal-700" : "text-neutral-dark-gray",
@@ -239,10 +244,11 @@ export function FileUpload({
             type="button"
             disabled={disabled}
             aria-label={labelText ? `${labelText}，${triggerText}` : undefined}
-            aria-describedby={
-              [error ? errorId : undefined, ariaDescribedBy].filter(Boolean).join(" ") ||
-              undefined
-            }
+            // The current file name (or 未設定) first: without it, after
+            // choosing a file a screen reader user heard only 重新選取.
+            aria-describedby={[fileId, error ? errorId : undefined, ariaDescribedBy]
+              .filter(Boolean)
+              .join(" ")}
             onClick={() => inputRef.current?.click()}
             className={buttonStyles}
           >
@@ -252,6 +258,9 @@ export function FileUpload({
             <button
               type="button"
               disabled={disabled}
+              // Named with the field, so two uploaders on a page do not both
+              // offer an indistinguishable 刪除圖片.
+              aria-label={labelText ? `${labelText}，${l.remove}` : undefined}
               onClick={() => {
                 setRejected(false)
                 onRemove()

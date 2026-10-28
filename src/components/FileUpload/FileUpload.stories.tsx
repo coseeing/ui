@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import { expect, fireEvent, fn, userEvent, waitFor, within } from "storybook/test"
 import { FileUpload } from "./FileUpload.js"
 import { Field } from "../Field/Field.js"
+import { Button } from "../Button/Button.js"
 
 /**
  * FileUpload — design-system extension (not in Figma). A real `<button>`
@@ -99,7 +100,9 @@ export const Semantics: Story = {
     await expect(input).toHaveAttribute("aria-hidden", "true")
 
     // No value: no remove action, and no preview image.
-    await expect(canvas.queryByRole("button", { name: "刪除圖片" })).toBeNull()
+    await expect(canvas.queryByRole("button", { name: /刪除圖片/ })).toBeNull()
+    // The state is part of the description: nothing chosen yet.
+    await expect(canvas.getByRole("button", { name: "封面圖片，選擇圖片" })).toHaveAccessibleDescription("未設定")
     await expect(canvas.queryByRole("img")).toBeNull()
   },
 }
@@ -123,7 +126,10 @@ export const ReselectTwice: Story = {
     await waitFor(() =>
       expect(canvas.getByRole("img", { name: "預覽：first.png" })).toBeVisible(),
     )
-    await expect(canvas.getByRole("button", { name: "封面圖片，重新選取" })).toBeVisible()
+    // After choosing, the trigger says which file is set — not just 重新選取.
+    await expect(canvas.getByRole("button", { name: "封面圖片，重新選取" })).toHaveAccessibleDescription(
+      "first.png",
+    )
 
     const second = png("second.png")
     pick(input, second)
@@ -152,7 +158,8 @@ export const ExistingUrl: Story = {
     )
     const trigger = canvas.getByRole("button", { name: "封面圖片，重新選取" })
 
-    await userEvent.click(canvas.getByRole("button", { name: "刪除圖片" }))
+    // Named with the field, so several uploaders on a page are distinguishable.
+    await userEvent.click(canvas.getByRole("button", { name: "封面圖片，刪除圖片" }))
     await expect(args.onRemove).toHaveBeenCalledOnce()
     await expect(trigger).toHaveFocus()
     await expect(trigger).toHaveAccessibleName("封面圖片，選擇圖片")
@@ -171,10 +178,10 @@ export const BrokenImage: Story = {
     const canvas = within(canvasElement)
     const trigger = canvas.getByRole("button", { name: "封面圖片，重新選取" })
 
-    await waitFor(() => expect(trigger).toHaveAccessibleDescription("圖片無法載入"))
+    await waitFor(() => expect(trigger).toHaveAccessibleDescription("cover photo.jpg 圖片無法載入"))
     await waitFor(() => expect(canvas.getByRole("status")).toHaveTextContent("圖片無法載入"))
     await expect(canvas.queryByRole("img")).toBeNull()
-    await expect(canvas.getByRole("button", { name: "刪除圖片" })).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "封面圖片，刪除圖片" })).toBeVisible()
   },
 }
 
@@ -198,7 +205,7 @@ export const DropFile: Story = {
     drop(new File(["hello"], "notes.txt", { type: "text/plain" }))
     await expect(args.onChange).not.toHaveBeenCalled()
     await expect(canvas.getByRole("status")).toHaveTextContent("不支援這個檔案類型")
-    await expect(trigger).toHaveAccessibleDescription("不支援這個檔案類型")
+    await expect(trigger).toHaveAccessibleDescription("未設定 不支援這個檔案類型")
 
     const photo = png("dropped.png")
     drop(photo)
@@ -218,6 +225,38 @@ export const WithoutPreview: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(canvas.queryByRole("img")).toBeNull()
-    await expect(canvas.getByRole("button", { name: "刪除檔案" })).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "封面圖片，刪除檔案" })).toBeVisible()
+  },
+}
+
+/**
+ * The button names follow the field label when it changes later (a locale
+ * switch, say) — the label text is re-read after every render, not once.
+ */
+export const LabelChangesLater: Story = {
+  args: { value: PNG_DATA_URL },
+  render: function Render(args) {
+    const [en, setEn] = useState(false)
+    return (
+      <div className="grid gap-16">
+        <Field label={en ? "Cover image" : "封面圖片"} htmlFor="cover-i18n" className="w-[44rem] max-w-full">
+          <FileUpload {...args} id="cover-i18n" onChange={() => {}} onRemove={() => {}} />
+        </Field>
+        <div>
+          <Button variant="small" theme="greenStroke" onClick={() => setEn(true)}>
+            English
+          </Button>
+        </div>
+      </div>
+    )
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole("button", { name: "封面圖片，重新選取" })).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "English" }))
+    await waitFor(() =>
+      expect(canvas.getByRole("button", { name: "Cover image，重新選取" })).toBeVisible(),
+    )
+    await expect(canvas.getByRole("button", { name: "Cover image，刪除圖片" })).toBeVisible()
   },
 }

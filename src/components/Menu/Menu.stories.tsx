@@ -252,3 +252,15 @@ export const IconOnlyTrigger: Story = {
     await expect(canvas.getByRole("menu", { name: "帳號選單" })).toBeVisible()
   },
 }
+
+// Type-level checks, enforced by `npm run typecheck` (never rendered): an
+// aria-label is required on an icon-only trigger and refused on one that
+// shows its label, where it would replace the visible name (WCAG 2.5.3).
+const typeChecks = () => [
+  // @ts-expect-error — iconOnly needs an aria-label
+  <Menu label="帳號選單" trigger={{ iconOnly: true, icon: <MenuIcon /> }} items={[]} />,
+  // @ts-expect-error — a visible label cannot be overridden by aria-label
+  <Menu label="更多操作" trigger={{ "aria-label": "其他" }} items={[]} />,
+  <Menu label="帳號選單" trigger={{ iconOnly: true, icon: <MenuIcon />, "aria-label": "帳號選單" }} items={[]} />,
+]
+void typeChecks

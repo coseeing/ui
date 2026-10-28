@@ -243,11 +243,14 @@ function ComboboxBase({
 
   // The listbox needs its own accessible name (axe: aria-input-field-name).
   // Explicit aria-label / aria-labelledby are forwarded; otherwise borrow the
-  // text of the <label> the input is paired with, e.g. via Field.
+  // text of the <label> the input is paired with, e.g. via Field. Re-read
+  // after every render (state set only on a change), so a label that changes
+  // later — a locale switch — does not leave the listbox with a stale name.
   const [labelText, setLabelText] = useState<string>()
   useEffect(() => {
-    setLabelText(inputRef.current?.labels?.[0]?.textContent ?? undefined)
-  }, [inputRef])
+    const text = inputRef.current?.labels?.[0]?.textContent ?? undefined
+    if (text !== labelText) setLabelText(text)
+  })
 
   const trimmed = query.trim()
   const matches = useMemo(
@@ -426,7 +429,10 @@ function ComboboxBase({
           setOpen(true)
           setActive(-1)
         }}
-        onClick={() => (open ? close() : setOpen(true))}
+        // Opens, never toggles: a click inside the text is usually placing
+        // the caret mid-filter, and closing the results then was jarring.
+        // Esc or a click outside closes.
+        onClick={() => setOpen(true)}
         onKeyDown={onKeyDown}
         onCompositionStart={() => {
           composingRef.current = true

@@ -43,11 +43,16 @@ type TriggerStyle =
   | { [V in ButtonVariant]: { variant: V; theme?: ButtonTheme<V> } }[ButtonVariant]
   | { variant?: undefined; theme?: ButtonTheme<"small"> }
 
-/** An icon-only trigger has no visible text, so it must be named. */
+/**
+ * An icon-only trigger has no visible text, so it must be named. A trigger
+ * that shows `label` takes its name from that text and cannot be given an
+ * `aria-label`, which would replace it — a spoken name that does not contain
+ * the visible one (WCAG 2.5.3 Label in Name).
+ */
 export type MenuTrigger = TriggerStyle & {
   /** Shown before the label, or alone with `iconOnly`. */
   icon?: React.ReactNode
-} & ({ iconOnly?: false; "aria-label"?: string } | { iconOnly: true; "aria-label": string })
+} & ({ iconOnly?: false; "aria-label"?: never } | { iconOnly: true; "aria-label": string })
 
 type MenuProps = {
   /** The trigger's visible text, and the menu's name. */
@@ -244,7 +249,7 @@ export function Menu({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={menuId}
-        aria-label={trigger?.["aria-label"]}
+        aria-label={iconOnly ? trigger?.["aria-label"] : undefined}
         onClick={() => (open ? close(false) : openMenu("first"))}
         onKeyDown={onTriggerKeyDown}
         className={cn(triggerClasses, "gap-8", iconOnly && "px-8")}

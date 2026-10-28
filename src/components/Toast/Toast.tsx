@@ -53,6 +53,16 @@ const TONE_DOT: Record<ToastTone, string> = {
 
 const DEFAULT_AUTO_HIDE = 5000
 
+// Each position's stack is its own region landmark, so two open at once must
+// not share a name — a landmark list reading 通知, 通知 tells nobody which is
+// which. The default (top-center) stays plain 通知.
+const DEFAULT_REGION_LABEL: Record<ToastPosition, string> = {
+  "top-center": "通知",
+  "top-right": "通知（右上）",
+  "bottom-center": "通知（下方）",
+  "bottom-right": "通知（右下）",
+}
+
 type ToastProps = {
   tone?: ToastTone
   title: string
@@ -78,7 +88,10 @@ type ToastProps = {
    * unannounced and with their timers stopped, until an earlier one closes.
    */
   max?: number
-  /** Managed mode: name of the stack's region landmark. */
+  /**
+   * Managed mode: name of the stack's region landmark. Defaults to 通知, with
+   * the position added for the other stacks (通知（右上）) so names stay unique.
+   */
   regionLabel?: string
   className?: string
 }
@@ -139,7 +152,7 @@ function ManagedToast({
   autoHide,
   position = "top-center",
   max = 3,
-  regionLabel = "通知",
+  regionLabel,
   ...card
 }: ToastProps & { open: boolean }) {
   const id = useId()
@@ -150,7 +163,7 @@ function ManagedToast({
   const [container, setContainer] = useState<HTMLElement | null>(null)
   useEffect(() => {
     if (!open) return
-    setContainer(register(position, id, regionLabel))
+    setContainer(register(position, id, regionLabel ?? DEFAULT_REGION_LABEL[position]))
     return () => {
       unregister(position, id)
       setContainer(null)

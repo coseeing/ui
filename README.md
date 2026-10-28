@@ -196,6 +196,11 @@ const [cover, setCover] = useState<File | string | null>(existingUrl)
   fires `onChange`.
 - The chosen file name, removal, and errors are announced through a live
   region that is always mounted. Removing hands focus back to the trigger.
+- The trigger's description is the current file name (or 未設定), so after a
+  pick it reads 「封面圖片，重新選取」 + 「cover.jpg」, not just 重新選取. The
+  remove button is named with the field too — 「封面圖片，刪除圖片」 — so two
+  uploaders on one page are distinguishable. The label text is re-read on
+  every render, so a label that changes later does not leave stale names.
 - A URL that fails to load shows 「圖片無法載入」 — the value is still set, so
   the name and actions stay rather than falling back to 「未設定」.
 - Drag and drop is a shortcut, never the only way. Dropped files are checked
@@ -275,7 +280,8 @@ Two layouts, same behaviour and announcements:
 | `"list"` (default) | `<ol>`, buttons in each row | 3 per row | Short lists; everyone knows how to read a list |
 | `"grid"` | APG layout grid (`role="grid"` / `row` / `gridcell`) | 1 for the whole list | Long lists, where 3 × rows Tab stops is a chore |
 
-In the grid, ←/→ move within a row, ↑/↓ between rows in the same column,
+`label` is required for `layout="grid"` (the type enforces it): ARIA requires
+a grid to be named. In the grid, ←/→ move within a row, ↑/↓ between rows in the same column,
 Home/End to the row's ends, Ctrl+Home/End to the first/last row. The single
 Tab stop is the last cell you were on, and it follows the item: after 上移 you
 are still on that item's 上移, one row up. The trade-off is that it is read as
@@ -301,7 +307,8 @@ control: to pick a value, use `Select` or `Combobox`.
   ]}
 />
 
-// Icon-only: the type requires aria-label.
+// Icon-only: the type requires aria-label. A trigger that shows `label` cannot
+// take one — it would replace the visible name (WCAG 2.5.3).
 <Menu label="帳號選單" trigger={{ icon: <MenuIcon />, iconOnly: true, "aria-label": "帳號選單" }} items={…} />
 ```
 
@@ -383,6 +390,9 @@ const [saved, setSaved] = useState(false)
 - Danger toasts stay until closed unless given an `autoHide`; an error should
   not vanish unread.
 - Timers pause while the pointer is over the stack or focus is inside it.
+- Each position's stack is a region landmark: 「通知」 for `top-center`, and
+  「通知（右上）」 etc. for the others, so two open at once are told apart
+  (`regionLabel` to override).
 - The close button is 「關閉通知」 (`closeLabel`). Closing moves focus to the
   next toast, or back to where it was before entering the stack.
 - Without `open`, `Toast` is a static card rendered in place: no timer, no
@@ -479,6 +489,8 @@ const [topics, setTopics] = useState<ComboboxOption[]>([])
   candidate never selects an option.
 - Nothing is pre-selected: the first match is highlighted but not written into
   the input.
+- Clicking the input opens the popup and never closes it — a click inside
+  the text is usually placing the caret. Esc or a click outside closes.
 - The match count is announced through a live region that is always mounted,
   once typing pauses (500ms) and never mid-IME-composition. Actions are
   announced too — 「已選取 WCAG」, 「已取消選取 WCAG」, 「已移除 WCAG」,

@@ -68,7 +68,7 @@ type Action = "up" | "down" | "remove"
 /** A grid column: the item's name, or one of its buttons. */
 type Cell = "label" | Action
 
-type ReorderableListProps<T> = {
+type ReorderableListBase<T> = {
   items: T[]
   getKey: (item: T) => string
   /** Plain text for button names and announcements. */
@@ -79,13 +79,17 @@ type ReorderableListProps<T> = {
   renderItem?: (item: T, index: number) => React.ReactNode
   /** Hide the remove buttons. */
   removable?: boolean
-  /** Accessible name of the list (or grid). */
-  label?: string
-  /** See the note at the top of the file. */
-  layout?: "list" | "grid"
   labels?: Partial<ReorderableListLabels>
   className?: string
 }
+
+/**
+ * `label` names the list or grid. It is required for the grid: ARIA requires
+ * a grid to have an accessible name, and inside one, a screen reader user has
+ * left normal reading — the name is what tells them where they are.
+ */
+type ReorderableListProps<T> = ReorderableListBase<T> &
+  ({ layout?: "list"; label?: string } | { layout: "grid"; label: string })
 
 const iconButtonStyles =
   "flex size-32 shrink-0 cursor-pointer items-center justify-center rounded-8 border-0 bg-transparent p-0 text-teal-700 transition-colors hover:bg-bg-light-beige focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-orange-PRIMARY aria-disabled:cursor-not-allowed aria-disabled:opacity-40 aria-disabled:hover:bg-transparent"

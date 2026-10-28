@@ -260,3 +260,12 @@ export const GridRemoveMovesFocus: Story = {
     await expect(tabStops(canvas.getByRole("grid"))).toEqual([next])
   },
 }
+
+// Type-level checks, enforced by `npm run typecheck` (never rendered): a grid
+// must be named, a list need not be.
+const typeChecks = () => [
+  // @ts-expect-error — layout="grid" requires `label`
+  <ReorderableList layout="grid" items={QUESTIONS} getKey={(q) => q.id} getLabel={(q) => q.title} onChange={() => {}} />,
+  <ReorderableList items={QUESTIONS} getKey={(q) => q.id} getLabel={(q) => q.title} onChange={() => {}} />,
+]
+void typeChecks

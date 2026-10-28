@@ -440,3 +440,19 @@ export const InvalidInField: Story = {
     await expect(input).toHaveAccessibleDescription("請至少選擇一個主題")
   },
 }
+
+/**
+ * Clicking inside the text while the popup is open keeps it open — that click
+ * is usually placing the caret to edit the filter, not asking to close.
+ */
+export const ClickInsideKeepsOpen: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const input = canvas.getByRole("combobox", { name: "主題標籤" })
+    await userEvent.click(input)
+    await expect(input).toHaveAttribute("aria-expanded", "true")
+    await userEvent.keyboard("a")
+    await userEvent.click(input)
+    await expect(input).toHaveAttribute("aria-expanded", "true")
+  },
+}
