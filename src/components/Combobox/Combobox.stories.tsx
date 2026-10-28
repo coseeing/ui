@@ -455,3 +455,38 @@ export const ClickInsideKeepsOpen: Story = {
     await expect(input).toHaveAttribute("aria-expanded", "true")
   },
 }
+
+/**
+ * With `name`, a native form submits the selected values — one entry per
+ * option for MultiCombobox, like a multiple <select> — and never the text
+ * typed to filter.
+ */
+export const SubmitsWithForm: Story = {
+  render: (args) => (
+    <form aria-label="活動設定" className="grid gap-16">
+      <SingleDemo name="topic" onBlur={args.onBlur as never} />
+      <MultiDemo {...args} name="topics" initial={TOPICS.slice(0, 2)} />
+    </form>
+  ),
+  args: { onBlur: fn() },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    const form = canvas.getByRole("form", { name: "活動設定" }) as HTMLFormElement
+    const data = () => new FormData(form)
+
+    await expect(data().getAll("topics")).toEqual(["wcag", "aria"])
+    await expect(data().get("topic")).toBe("")
+
+    const single = canvas.getByRole("combobox", { name: "主要主題" })
+    single.focus()
+    await userEvent.keyboard("字幕{ArrowDown}{Enter}")
+    await expect(data().get("topic")).toBe("captions")
+
+    // Typed-but-uncommitted text is not part of the submission.
+    const multi = canvas.getByRole("combobox", { name: "主題標籤" })
+    multi.focus()
+    await expect(args.onBlur).toHaveBeenCalled() // native handlers pass through
+    await userEvent.keyboard("語音")
+    await expect(data().getAll("topics")).toEqual(["wcag", "aria"])
+  },
+}

@@ -75,6 +75,22 @@ type FileUploadProps = {
   preview?: boolean
   invalid?: boolean
   disabled?: boolean
+  /**
+   * Submit the file with a native <form> under this name. The hidden file
+   * input is kept holding the current File — including a dropped one — and
+   * is emptied when `value` is cleared or is an existing URL.
+   */
+  name?: string
+  onFocus?: React.FocusEventHandler<HTMLButtonElement>
+  onBlur?: React.FocusEventHandler<HTMLButtonElement>
+  /**
+   * The field's name, when there is no <label> to pair with. Like a label's
+   * text it is combined with the action: aria-label="封面圖片" names the
+   * buttons 封面圖片，選擇圖片 and 封面圖片，刪除圖片.
+   */
+  "aria-label"?: string
+  /** As `aria-label`, by reference: the element's text is the field's name. */
+  "aria-labelledby"?: string
   "aria-describedby"?: string
   labels?: Partial<FileUploadLabels>
   className?: string
@@ -122,6 +138,11 @@ export function FileUpload({
   preview,
   invalid,
   disabled,
+  name: fieldName,
+  onFocus,
+  onBlur,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
   "aria-describedby": ariaDescribedBy,
   labels,
   className,
@@ -178,6 +199,60 @@ export function FileUpload({
   const name = hasValue ? (nameOf(value) ?? l.current) : undefined
   const triggerText = hasValue ? l.replace : l.choose
   const error = loadFailed ? l.loadError : rejected ? l.wrongType : undefined
+
+  // The file input mirrors `value`, so a native form submit sends what the
+  // user sees: a dropped File is written into it, and it is emptied when the
+  // value is cleared or is a URL (nothing new to upload).
+  useEffect(() => {
+    const input = inputRef.current
+    if (!input) return
+    if (value instanceof File) {
+      if (input.files?.[0] === value) return
+      try {
+        const dt = new DataTransfer()
+        dt.items.add(value)
+        input.files = dt.files
+      } catch {
+        // DataTransfer is not constructible in very old browsers; the picker
+        // path still works there, only a dropped file is not submitted.
+      }
+    } else if (input.value) {
+      input.value = ""
+    }
+  }, [value])
+
+  // Re-selecting the same file must still fire `change`, which it does not
+  // while the input already holds that file. So the input is emptied just
+  // before the picker opens — and restored if the picker is cancelled,
+  // or a form would lose the file the user still sees.
+  const openPicker = () => {
+    const input = inputRef.current
+    if (!input) return
+    // Copied: input.files is a live FileList, emptied with the input.
+    const held = Array.from(input.files ?? [])
+    input.value = ""
+    input.addEventListener(
+      "cancel",
+      () => {
+        if (held.length === 0) return
+        const dt = new DataTransfer()
+        held.forEach((file) => dt.items.add(file))
+        input.files = dt.files
+      },
+      { once: true },
+    )
+    input.click()
+  }
+
+  // Names: aria-labelledby (by reference) > aria-label > a paired <label>.
+  // Each is the field's name, combined with the button's action.
+  const fieldLabel = ariaLabel ?? labelText
+  const triggerTextId = `${triggerId}-action`
+  const removeTextId = `${triggerId}-remove`
+  const buttonName = (action: string, textId: string) =>
+    ariaLabelledBy
+      ? { "aria-labelledby": `${ariaLabelledBy} ${textId}` }
+      : { "aria-label": fieldLabel ? l.named(fieldLabel, action) : undefined }
 
   const take = (file: File | undefined) => {
     if (!file) return
@@ -253,16 +328,18 @@ export function FileUpload({
             id={triggerId}
             type="button"
             disabled={disabled}
-            aria-label={labelText ? l.named(labelText, triggerText) : undefined}
+            {...buttonName(triggerText, triggerTextId)}
+            onFocus={onFocus}
+            onBlur={onBlur}
             // The current file name (or 未設定) first: without it, after
             // choosing a file a screen reader user heard only 重新選取.
             aria-describedby={[fileId, error ? errorId : undefined, ariaDescribedBy]
               .filter(Boolean)
               .join(" ")}
-            onClick={() => inputRef.current?.click()}
+            onClick={openPicker}
             className={buttonStyles}
           >
-            {triggerText}
+            <span id={triggerTextId}>{triggerText}</span>
           </button>
           {hasValue && onRemove ? (
             <button
@@ -270,7 +347,7 @@ export function FileUpload({
               disabled={disabled}
               // Named with the field, so two uploaders on a page do not both
               // offer an indistinguishable 刪除圖片.
-              aria-label={labelText ? l.named(labelText, l.remove) : undefined}
+              {...buttonName(l.remove, removeTextId)}
               onClick={() => {
                 setRejected(false)
                 onRemove()
@@ -280,7 +357,7 @@ export function FileUpload({
               }}
               className={buttonStyles}
             >
-              {l.remove}
+              <span id={removeTextId}>{l.remove}</span>
             </button>
           ) : null}
         </div>
@@ -293,16 +370,14 @@ export function FileUpload({
         ref={inputRef}
         type="file"
         accept={accept}
+        name={fieldName}
         tabIndex={-1}
         aria-hidden="true"
         disabled={disabled}
         className="sr-only"
-        onChange={(e) => {
-          take(e.target.files?.[0])
-          // Without this, choosing the same file again fires no change event,
-          // so "re-select" silently does nothing the second time.
-          e.target.value = ""
-        }}
+        // Not emptied here: it keeps the file for form submission. See
+        // openPicker for how re-selecting the same file still works.
+        onChange={(e) => take(e.target.files?.[0])}
       />
 
       <LiveRegion message={message} />

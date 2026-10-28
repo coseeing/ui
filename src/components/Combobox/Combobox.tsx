@@ -154,6 +154,15 @@ type SharedProps = {
   "aria-label"?: string
   "aria-labelledby"?: string
   "aria-describedby"?: string
+  /**
+   * Submit the selection with a native <form>: a hidden input carrying the
+   * selected option's `value` — one per option for MultiCombobox, the way a
+   * multiple <select> submits. The visible input is never submitted; its text
+   * is only the filter.
+   */
+  name?: string
+  onFocus?: React.FocusEventHandler<HTMLInputElement>
+  onBlur?: React.FocusEventHandler<HTMLInputElement>
   className?: string
 }
 
@@ -219,6 +228,8 @@ function ComboboxBase({
   "aria-label": ariaLabel,
   "aria-labelledby": ariaLabelledBy,
   "aria-describedby": ariaDescribedBy,
+  onFocus,
+  onBlur,
   className,
   multiple,
   inputRef,
@@ -425,6 +436,8 @@ function ComboboxBase({
         aria-label={ariaLabel}
         aria-labelledby={ariaLabelledBy}
         aria-describedby={ariaDescribedBy}
+        onFocus={onFocus}
+        onBlur={onBlur}
         disabled={disabled}
         placeholder={placeholder}
         value={inputValue}
@@ -538,7 +551,7 @@ function CheckMark() {
 }
 
 /** Single-select combobox. `value` is one option or null. */
-export function Combobox({ value, onChange, ...props }: ComboboxProps) {
+export function Combobox({ value, onChange, name, ...props }: ComboboxProps) {
   const l = { ...DEFAULT_LABELS, ...props.labels }
   const inputRef = useRef<HTMLInputElement>(null)
   const announcer = useComboboxAnnouncer()
@@ -558,38 +571,41 @@ export function Combobox({ value, onChange, ...props }: ComboboxProps) {
   }
 
   return (
-    <ComboboxBase
-      {...props}
-      multiple={false}
-      inputRef={inputRef}
-      inputValue={editing ? query : (value?.label ?? "")}
-      query={editing ? query : ""}
-      onQueryChange={(q) => {
-        setQuery(q)
-        setEditing(true)
-      }}
-      isSelected={(o) => o.value === value?.value}
-      onSelect={(o) => {
-        onChange(o)
-        reset()
-        announcer.notice(l.selected(o.label))
-      }}
-      onCreated={(label) => {
-        reset()
-        announceCreated(label)
-      }}
-      announcer={announcer}
-      onClear={() => {
-        reset()
-        if (value) onChange(null)
-      }}
-      onLeave={() => {
-        // Typed text that was never committed is discarded — except an input
-        // the user deliberately emptied, which means "no value".
-        if (editing && query.trim() === "" && value) onChange(null)
-        reset()
-      }}
-    />
+    <>
+      {name ? <input type="hidden" name={name} value={value?.value ?? ""} /> : null}
+      <ComboboxBase
+        {...props}
+        multiple={false}
+        inputRef={inputRef}
+        inputValue={editing ? query : (value?.label ?? "")}
+        query={editing ? query : ""}
+        onQueryChange={(q) => {
+          setQuery(q)
+          setEditing(true)
+        }}
+        isSelected={(o) => o.value === value?.value}
+        onSelect={(o) => {
+          onChange(o)
+          reset()
+          announcer.notice(l.selected(o.label))
+        }}
+        onCreated={(label) => {
+          reset()
+          announceCreated(label)
+        }}
+        announcer={announcer}
+        onClear={() => {
+          reset()
+          if (value) onChange(null)
+        }}
+        onLeave={() => {
+          // Typed text that was never committed is discarded — except an input
+          // the user deliberately emptied, which means "no value".
+          if (editing && query.trim() === "" && value) onChange(null)
+          reset()
+        }}
+      />
+    </>
   )
 }
 
@@ -603,6 +619,7 @@ export function MultiCombobox({
   className,
   labels,
   disabled,
+  name,
   ...props
 }: MultiComboboxProps) {
   const l = { ...DEFAULT_LABELS, ...labels }
@@ -637,6 +654,9 @@ export function MultiCombobox({
 
   return (
     <div className={cn("grid w-full gap-8", className)}>
+      {name
+        ? value.map((o) => <input key={o.value} type="hidden" name={name} value={o.value} />)
+        : null}
       {value.length > 0 ? (
         <ul aria-label={l.selectedList} className="m-0 flex list-none flex-wrap gap-8 p-0">
           {value.map((option, i) => (

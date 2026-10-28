@@ -108,9 +108,10 @@ export const Semantics: Story = {
 }
 
 /**
- * Re-selecting works twice in a row — including the same file. The input is
- * reset after each change; without that, the browser fires no change event
- * for an identical second pick and "重新選取" silently does nothing.
+ * Re-selecting works twice in a row — including the same file. The browser
+ * fires no change event when the input already holds the chosen file, so the
+ * input is emptied just before the picker opens; cancelling the picker puts
+ * the file back, so a form still has it.
  */
 export const ReselectTwice: Story = {
   play: async ({ canvasElement, args }) => {
@@ -121,17 +122,26 @@ export const ReselectTwice: Story = {
     const first = png("first.png")
     pick(input, first)
     await expect(args.onChange).toHaveBeenLastCalledWith(first)
-    await expect(input).toHaveValue("")
+    await expect(input.files?.[0]).toBe(first) // kept, for form submission
     await expect(status).toHaveTextContent("已選擇 first.png")
     await waitFor(() =>
       expect(canvas.getByRole("img", { name: "預覽：first.png" })).toBeVisible(),
     )
     // After choosing, the trigger says which file is set — not just 重新選取.
-    await expect(canvas.getByRole("button", { name: "封面圖片，重新選取" })).toHaveAccessibleDescription(
-      "first.png",
-    )
+    const trigger = canvas.getByRole("button", { name: "封面圖片，重新選取" })
+    await expect(trigger).toHaveAccessibleDescription("first.png")
+
+    // Opening the picker empties the input, so picking first.png again is a
+    // change. (A synthetic click opens no real picker, which is what lets
+    // the test look at the input in between.)
+    await userEvent.click(trigger)
+    await expect(input).toHaveValue("")
+    // Cancelling puts the file back.
+    input.dispatchEvent(new Event("cancel"))
+    await expect(input.files?.[0]).toBe(first)
 
     const second = png("second.png")
+    await userEvent.click(trigger)
     pick(input, second)
     await expect(args.onChange).toHaveBeenLastCalledWith(second)
     await waitFor(() =>
@@ -139,9 +149,64 @@ export const ReselectTwice: Story = {
     )
 
     // The same file once more.
+    await userEvent.click(trigger)
     pick(input, second)
     await expect(args.onChange).toHaveBeenCalledTimes(3)
-    await expect(input).toHaveValue("")
+  },
+}
+
+/**
+ * With `name`, a native form submits the file the user sees: one picked, one
+ * dropped, or none once it is removed (or while the value is an existing URL).
+ */
+export const SubmitsWithForm: Story = {
+  render: (args) => (
+    <form aria-label="活動資料">
+      <Demo {...args} name="cover" />
+    </form>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const form = canvas.getByRole("form", { name: "活動資料" }) as HTMLFormElement
+    const submitted = () => new FormData(form).get("cover")
+
+    const picked = png("picked.png")
+    pick(fileInput(canvasElement), picked)
+    await expect(submitted()).toBe(picked)
+
+    const dropped = png("dropped.png")
+    const dataTransfer = new DataTransfer()
+    dataTransfer.items.add(dropped)
+    const trigger = canvas.getByRole("button", { name: "封面圖片，重新選取" })
+    for (const type of ["dragover", "drop"]) {
+      trigger.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer }))
+    }
+    await waitFor(() => expect(submitted()).toBe(dropped))
+
+    await userEvent.click(canvas.getByRole("button", { name: "封面圖片，刪除圖片" }))
+    await waitFor(() => expect((submitted() as File).size).toBe(0)) // empty file part
+  },
+}
+
+/**
+ * Without a <label>, `aria-label` (or `aria-labelledby`) names the field, and
+ * is combined with each button's action just as a label's text would be.
+ */
+export const NamedWithoutLabel: Story = {
+  render: () => (
+    <div className="grid gap-16">
+      <FileUpload value={PNG_DATA_URL} onChange={() => {}} onRemove={() => {}} aria-label="封面圖片" />
+      <p id="avatar-heading" className="typography-strong2 m-0 text-teal-700">
+        大頭貼
+      </p>
+      <FileUpload value={null} onChange={() => {}} aria-labelledby="avatar-heading" />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole("button", { name: "封面圖片，重新選取" })).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "封面圖片，刪除圖片" })).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "大頭貼 選擇圖片" })).toBeVisible()
   },
 }
 

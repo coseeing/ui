@@ -427,6 +427,25 @@ three to 4.36 / 4.14 / 4.43. `orange-800: #985700` extends the Figma ramp for
 the same reason `green-800` does — `orange-700` is 3.54 on beige — and is the
 lightest step of that hue that passes everywhere (see `tokens.css`).
 
+### `className`, `name`, and native props
+
+Every component takes `className`, merged with `cn()`. Where it lands:
+
+- **A single native control** — `Input`, `Textarea`, `Select`, `Checkbox` —
+  puts it on that control, and spreads every other native attribute onto it
+  too (`name`, `required`, `onBlur`, …).
+- **A composite widget** — `Combobox`, `FileUpload`, `Pagination`, `Menu`,
+  `ReorderableList`, … — puts it on its outermost element. These take an
+  explicit list of props rather than spreading, because their parts are not
+  one element; the form-facing ones still cover what a form needs: `id`,
+  `name`, `onFocus`/`onBlur`, `invalid`, `disabled`, and `aria-label` /
+  `aria-labelledby` / `aria-describedby`.
+
+With `name`, `Combobox`/`MultiCombobox` submit the selected option values
+through hidden inputs (one per option for the multi version, like a multiple
+`<select>`), and `FileUpload` submits the current file from its hidden file
+input — including a dropped one.
+
 ### Overriding strings: `labels`
 
 Components with more than one user-facing string take a `labels` object;
