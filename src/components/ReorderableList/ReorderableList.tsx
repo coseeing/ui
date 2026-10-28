@@ -18,6 +18,20 @@ import { ChevronDownIcon, PlusIcon } from "../Icons/Icons.js"
 // can tell apart. At the ends, 上移/下移 are aria-disabled, not
 // disabled: a disabled button cannot hold focus, and the item just moved to
 // the top would lose it. Pressing one there only says 已抵達第一項.
+//
+// Two layouts, same behaviour:
+//
+// - "list" (default): an <ol>; every button is its own Tab stop — three per
+//   row. Simple, and every screen reader user already knows how to read a
+//   list. Best for short lists.
+// - "grid": APG layout grid. The whole list is ONE Tab stop; arrows move
+//   between cells (←/→ within a row, ↑/↓ between rows in the same column,
+//   Home/End to the row's ends, Ctrl+Home/End to the first/last row). For
+//   long lists, where 3 × rows Tab stops is a chore. The cost: it is read as
+//   a grid, not a list, and the user has to know grid navigation (screen
+//   readers switch to focus mode inside it). The focused cell is tracked by
+//   item key and column, so after 上移 the focus is still on that item's 上移
+//   — now one row up.
 
 export type ReorderableListLabels = {
   up: string
@@ -51,6 +65,8 @@ const DEFAULT_LABELS: ReorderableListLabels = {
 }
 
 type Action = "up" | "down" | "remove"
+/** A grid column: the item's name, or one of its buttons. */
+type Cell = "label" | Action
 
 type ReorderableListProps<T> = {
   items: T[]
@@ -63,8 +79,10 @@ type ReorderableListProps<T> = {
   renderItem?: (item: T, index: number) => React.ReactNode
   /** Hide the remove buttons. */
   removable?: boolean
-  /** Accessible name of the list. */
+  /** Accessible name of the list (or grid). */
   label?: string
+  /** See the note at the top of the file. */
+  layout?: "list" | "grid"
   labels?: Partial<ReorderableListLabels>
   className?: string
 }
@@ -80,11 +98,13 @@ export function ReorderableList<T>({
   renderItem,
   removable = true,
   label,
+  layout = "list",
   labels,
   className,
 }: ReorderableListProps<T>) {
   const l = { ...DEFAULT_LABELS, ...labels }
-  const buttons = useRef(new Map<string, HTMLButtonElement>())
+  const grid = layout === "grid"
+  const buttons = useRef(new Map<string, HTMLElement>())
   const emptyRef = useRef<HTMLParagraphElement>(null)
 
   const { message, say } = useAnnouncer()
@@ -141,10 +161,120 @@ export function ReorderableList<T>({
     say(l.removed(getLabel(item)))
   }
 
-  const register = (key: string, action: Action) => (el: HTMLButtonElement | null) => {
-    if (el) buttons.current.set(`${key}:${action}`, el)
-    else buttons.current.delete(`${key}:${action}`)
+  const register = (key: string, cell: Cell) => (el: HTMLElement | null) => {
+    if (el) buttons.current.set(`${key}:${cell}`, el)
+    else buttons.current.delete(`${key}:${cell}`)
   }
+
+  // ── Grid: roving tabindex over (item, column) ───────────────────────────
+  const columns: Cell[] = ["label", "up", "down", ...(removable ? (["remove"] as const) : [])]
+  const [cursor, setCursor] = useState<{ key: string; cell: Cell } | null>(null)
+  // Fall back to the first cell when nothing is focused yet or the item went.
+  const current =
+    cursor && items.some((i) => getKey(i) === cursor.key) && columns.includes(cursor.cell)
+      ? cursor
+      : items[0]
+        ? { key: getKey(items[0]), cell: "label" as Cell }
+        : null
+  const isStop = (key: string, cell: Cell) =>
+    !!current && current.key === key && current.cell === cell
+
+  const onGridKeyDown = (e: React.KeyboardEvent) => {
+    if (!current) return
+    const last = { row: items.length - 1, col: columns.length - 1 }
+    let row = items.findIndex((i) => getKey(i) === current.key)
+    let col = columns.indexOf(current.cell)
+    switch (e.key) {
+      case "ArrowRight":
+        col = Math.min(col + 1, last.col)
+        break
+      case "ArrowLeft":
+        col = Math.max(col - 1, 0)
+        break
+      case "ArrowDown":
+        row = Math.min(row + 1, last.row)
+        break
+      case "ArrowUp":
+        row = Math.max(row - 1, 0)
+        break
+      case "Home":
+        if (e.ctrlKey) row = 0
+        col = 0
+        break
+      case "End":
+        if (e.ctrlKey) row = last.row
+        col = last.col
+        break
+      default:
+        return
+    }
+    e.preventDefault()
+    buttons.current.get(`${getKey(items[row]!)}:${columns[col]}`)?.focus()
+  }
+
+  /** Grid-only props for a focusable cell element. */
+  const cellProps = (key: string, cell: Cell) =>
+    grid
+      ? { tabIndex: isStop(key, cell) ? 0 : -1, onFocus: () => setCursor({ key, cell }) }
+      : {}
+
+  const rowButtons = (item: T, index: number) => {
+    const key = getKey(item)
+    const name = getLabel(item)
+    const wrap = (node: React.ReactNode) =>
+      grid ? <div role="gridcell">{node}</div> : node
+    return (
+      <>
+        {wrap(
+          <button
+            ref={register(key, "up")}
+            type="button"
+            aria-label={`${l.up}：${name}`}
+            aria-disabled={index === 0 || undefined}
+            onClick={() => move(index, -1)}
+            className={iconButtonStyles}
+            {...cellProps(key, "up")}
+          >
+            <ChevronDownIcon className="w-[1.4rem] rotate-180" />
+          </button>,
+        )}
+        {wrap(
+          <button
+            ref={register(key, "down")}
+            type="button"
+            aria-label={`${l.down}：${name}`}
+            aria-disabled={index === items.length - 1 || undefined}
+            onClick={() => move(index, 1)}
+            className={iconButtonStyles}
+            {...cellProps(key, "down")}
+          >
+            <ChevronDownIcon className="w-[1.4rem]" />
+          </button>,
+        )}
+        {removable
+          ? wrap(
+              <button
+                ref={register(key, "remove")}
+                type="button"
+                aria-label={`${l.remove}：${name}`}
+                onClick={() => remove(index)}
+                className={iconButtonStyles}
+                {...cellProps(key, "remove")}
+              >
+                <PlusIcon className="size-20 rotate-45" />
+              </button>,
+            )
+          : null}
+      </>
+    )
+  }
+
+  const rowStyles = (key: string) =>
+    cn(
+      "flex items-center gap-12 border-b border-bg-warm-gray py-8 pl-12 transition-colors duration-700 motion-reduce:transition-none",
+      moved === key ? "bg-orange-100" : "bg-transparent",
+    )
+  const labelStyles = "typography-body1 min-w-0 flex-1 text-teal-700"
 
   return (
     <div className={className}>
@@ -157,60 +287,50 @@ export function ReorderableList<T>({
           {l.empty}
         </p>
       ) : (
-        <ol aria-label={label} className="m-0 list-none border-t border-bg-warm-gray p-0">
-          {items.map((item, index) => {
-            const key = getKey(item)
-            const name = getLabel(item)
-            const first = index === 0
-            const last = index === items.length - 1
-            return (
-              <li
-                key={key}
-                className={cn(
-                  "flex items-center gap-12 border-b border-bg-warm-gray py-8 pl-12 transition-colors duration-700 motion-reduce:transition-none",
-                  moved === key ? "bg-orange-100" : "bg-transparent",
-                )}
-              >
-                <div className="typography-body1 min-w-0 flex-1 text-teal-700">
-                  {renderItem ? renderItem(item, index) : name}
-                </div>
-                <div className="flex shrink-0 gap-4">
-                  <button
-                    ref={register(key, "up")}
-                    type="button"
-                    aria-label={`${l.up}：${name}`}
-                    aria-disabled={first || undefined}
-                    onClick={() => move(index, -1)}
-                    className={iconButtonStyles}
+        grid ? (
+          <div
+            role="grid"
+            aria-label={label}
+            onKeyDown={onGridKeyDown}
+            className="border-t border-bg-warm-gray"
+          >
+            {items.map((item, index) => {
+              const key = getKey(item)
+              return (
+                <div key={key} role="row" className={rowStyles(key)}>
+                  <div
+                    ref={register(key, "label")}
+                    role="gridcell"
+                    className={cn(
+                      labelStyles,
+                      "rounded-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-PRIMARY",
+                    )}
+                    {...cellProps(key, "label")}
                   >
-                    <ChevronDownIcon className="w-[1.4rem] rotate-180" />
-                  </button>
-                  <button
-                    ref={register(key, "down")}
-                    type="button"
-                    aria-label={`${l.down}：${name}`}
-                    aria-disabled={last || undefined}
-                    onClick={() => move(index, 1)}
-                    className={iconButtonStyles}
-                  >
-                    <ChevronDownIcon className="w-[1.4rem]" />
-                  </button>
-                  {removable ? (
-                    <button
-                      ref={register(key, "remove")}
-                      type="button"
-                      aria-label={`${l.remove}：${name}`}
-                      onClick={() => remove(index)}
-                      className={iconButtonStyles}
-                    >
-                      <PlusIcon className="size-20 rotate-45" />
-                    </button>
-                  ) : null}
+                    {renderItem ? renderItem(item, index) : getLabel(item)}
+                  </div>
+                  <div role="none" className="flex shrink-0 gap-4">
+                    {rowButtons(item, index)}
+                  </div>
                 </div>
-              </li>
-            )
-          })}
-        </ol>
+              )
+            })}
+          </div>
+        ) : (
+          <ol aria-label={label} className="m-0 list-none border-t border-bg-warm-gray p-0">
+            {items.map((item, index) => {
+              const key = getKey(item)
+              return (
+                <li key={key} className={rowStyles(key)}>
+                  <div className={labelStyles}>
+                    {renderItem ? renderItem(item, index) : getLabel(item)}
+                  </div>
+                  <div className="flex shrink-0 gap-4">{rowButtons(item, index)}</div>
+                </li>
+              )
+            })}
+          </ol>
+        )
       )}
       <LiveRegion message={message} />
     </div>

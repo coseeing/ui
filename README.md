@@ -266,6 +266,20 @@ so values line up. No state, so it renders on the server.
 - `renderItem` for richer rows; `removable={false}` to hide 移除; strings in
   `labels`.
 
+Two layouts, same behaviour and announcements:
+
+| `layout` | Structure | Tab stops | Use when |
+| --- | --- | --- | --- |
+| `"list"` (default) | `<ol>`, buttons in each row | 3 per row | Short lists; everyone knows how to read a list |
+| `"grid"` | APG layout grid (`role="grid"` / `row` / `gridcell`) | 1 for the whole list | Long lists, where 3 × rows Tab stops is a chore |
+
+In the grid, ←/→ move within a row, ↑/↓ between rows in the same column,
+Home/End to the row's ends, Ctrl+Home/End to the first/last row. The single
+Tab stop is the last cell you were on, and it follows the item: after 上移 you
+are still on that item's 上移, one row up. The trade-off is that it is read as
+a grid rather than a list, and screen reader users need to know grid
+navigation (they are switched to focus mode inside it).
+
 ### Menu
 
 A menu button for actions or navigation — 更多操作, 帳號選單. Not a form
@@ -612,7 +626,9 @@ What the story tests actually pin down, beyond "it renders":
   announced; `fullPage` inerts the rest of `<body>` and restores it.
 - **ReorderableList** — `<ol>` semantics and item-named buttons;
   `aria-disabled` at the ends; focus kept through moves and an end;
-  announcements; focus after removing the middle, last, and only row.
+  announcements; focus after removing the middle, last, and only row. Grid
+  layout: one Tab stop, arrow / Home / End / Ctrl+Home / Ctrl+End movement
+  without wrapping, and the Tab stop following the moved item.
 - **Menu** — trigger and menu wiring; Enter/Space/↓/↑ opening; wrap,
   Home/End and typeahead; activation returns focus; disabled items are
   reachable and inert; Esc, Tab and outside-click close; the viewport flip;
