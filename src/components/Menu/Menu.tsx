@@ -68,7 +68,7 @@ type MenuProps = {
 // not `outline-none`: it is a transparent outline, which forced-colors mode
 // paints, so the item stays visibly focused when shadows and fills are gone.
 const itemStyles =
-  "typography-body1 flex w-full cursor-pointer items-center gap-8 border-0 bg-transparent px-16 py-8 text-left no-underline transition-colors hover:bg-bg-light-off-white focus:bg-bg-light-beige focus:shadow-[inset_0.4rem_0_0_var(--color-teal-PRIMARY)] focus:outline-hidden aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:bg-transparent"
+  "typography-body1 flex w-full cursor-pointer items-center gap-8 border-0 bg-transparent px-16 py-8 text-left no-underline transition-colors hover:bg-bg-light-off-white focus:bg-bg-light-beige focus:shadow-marker focus:outline-hidden aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:bg-transparent"
 
 /** Gap kept between the popup and the viewport edge, in px. */
 const VIEWPORT_MARGIN = 8
@@ -266,7 +266,7 @@ export function Menu({
         hidden={!open}
         onKeyDown={onMenuKeyDown}
         className={cn(
-          "absolute top-full z-20 m-0 mt-4 min-w-[16rem] max-w-[calc(100vw-1.6rem)] list-none overflow-hidden rounded-8 border border-bg-warm-gray bg-neutral-white p-0 py-4 shadow-[0_0.8rem_2.4rem_rgb(16_36_42_/_0.16)]",
+          "absolute top-full z-20 m-0 mt-4 min-w-[16rem] max-w-[calc(100vw-1.6rem)] list-none overflow-hidden rounded-8 border border-bg-warm-gray bg-neutral-white p-0 py-4 shadow-popup",
           align === "end" ? "right-0" : "left-0",
         )}
       >

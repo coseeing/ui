@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef } from "react"
 import { cn } from "../../lib/cn.js"
 import { PlusIcon } from "../Icons/Icons.js"
+import { iconButtonClasses } from "../Button/Button.js"
 
 // Dialog — design-system extension (not in Figma), styled in the brand
 // language: the auth-panel signature (white rounded-24 panel, orange top
@@ -62,7 +63,7 @@ export function Dialog({
         // Same shell as Card — white, rounded-24, warm-gray hairline — so a
         // dialog reads as the surface the rest of the app uses. It keeps a
         // shadow and backdrop because, unlike a Card, it floats.
-        "m-auto w-[calc(100vw-4rem)] overflow-hidden rounded-24 border border-bg-warm-gray bg-neutral-white p-0 shadow-[0_1.6rem_4rem_rgb(16_36_42_/_0.25)] backdrop:bg-teal-700/60 backdrop:backdrop-blur-[0.3rem]",
+        "m-auto w-[calc(100vw-4rem)] overflow-hidden rounded-24 border border-bg-warm-gray bg-neutral-white p-0 shadow-modal backdrop:bg-teal-700/60 backdrop:backdrop-blur-[0.3rem]",
         size === "sm" ? "max-w-[44rem]" : "max-w-[64rem]",
         className,
       )}
@@ -86,7 +87,7 @@ export function Dialog({
             type="button"
             aria-label={closeLabel}
             onClick={onClose}
-            className="-mr-4 flex size-32 shrink-0 cursor-pointer items-center justify-center rounded-8 border-0 bg-transparent p-0 text-teal-300 transition-colors hover:bg-bg-light-beige hover:text-teal-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-teal-PRIMARY"
+            className={cn(iconButtonClasses(), "-mr-4 text-teal-300 hover:text-teal-700")}
           >
             <PlusIcon className="size-16 rotate-45" />
           </button>

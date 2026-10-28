@@ -42,6 +42,26 @@ const variantStyles = {
   },
 } as const
 
+const iconButtonBase =
+  "inline-flex shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-teal-700 transition-colors disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-teal-PRIMARY"
+
+const iconButtonSize = {
+  // 32×32, rounded square: row actions (ReorderableList), close (Dialog, Toast).
+  md: "size-32 rounded-8 hover:bg-bg-light-beige aria-disabled:hover:bg-transparent",
+  // 24×24 (the WCAG 2.5.8 minimum), round: inside a pill (Combobox chips).
+  sm: "size-24 rounded-full hover:bg-bg-light-beige",
+} as const
+
+/**
+ * The square/round icon-only button used across the package — one shell, so
+ * sizes, hover, disabled and focus match wherever an × or a chevron is a
+ * button. Callers add colour overrides for their surface via cn() (Dialog's
+ * muted ×, Toast's on teal). Internal, like buttonClasses.
+ */
+export function iconButtonClasses(size: keyof typeof iconButtonSize = "md") {
+  return cn(iconButtonBase, iconButtonSize[size])
+}
+
 export type ButtonVariant = keyof typeof variantStyles
 export type ButtonTheme<V extends ButtonVariant> = keyof (typeof variantStyles)[V]
 

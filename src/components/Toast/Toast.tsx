@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react"
 import { createPortal } from "react-dom"
 import { cn } from "../../lib/cn.js"
 import { PlusIcon } from "../Icons/Icons.js"
+import { iconButtonClasses } from "../Button/Button.js"
 import { LiveRegion, useAnnouncer } from "../LiveRegion/LiveRegion.js"
 import {
   parse,
@@ -180,7 +181,7 @@ function ToastCard({
   return (
     <div
       className={cn(
-        "flex w-full max-w-[40rem] items-start gap-12 rounded-[1.2rem] bg-teal-PRIMARY px-20 py-16 shadow-[0_0.8rem_2.4rem_rgb(16_36_42_/_0.24)]",
+        "flex w-full max-w-[40rem] items-start gap-12 rounded-[1.2rem] bg-teal-PRIMARY px-20 py-16 shadow-toast",
         onClose && "pr-12",
         className,
       )}
@@ -203,7 +204,12 @@ function ToastCard({
           data-toast-close=""
           aria-label={closeLabel}
           onClick={onClose}
-          className="-my-4 flex size-32 shrink-0 cursor-pointer items-center justify-center rounded-8 border-0 bg-transparent p-0 text-bg-light-off-white transition-colors hover:bg-teal-500 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-orange-PRIMARY"
+          // On the teal card: light glyph, darker-teal hover, and the orange focus
+          // outline that is the dark-surface rule (5.5:1 on teal).
+          className={cn(
+            iconButtonClasses(),
+            "-my-4 text-bg-light-off-white hover:bg-teal-500 focus-visible:outline-orange-PRIMARY",
+          )}
         >
           <PlusIcon className="size-20 rotate-45" />
         </button>

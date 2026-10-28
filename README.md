@@ -761,6 +761,19 @@ on — the old orange ring was 1.6–2.0:1 on the brand's light surfaces):
   on teal. Filled Buttons draw their ring inset, measured against their own
   fill, so they work on any page surface.
 
+Shared building blocks, so the same thing looks the same everywhere:
+
+- **Shells**: `inputStyles`/`invalidStyles` (Input.tsx) for text-like fields;
+  `buttonClasses(variant, theme)` for anything that looks like a Button;
+  `iconButtonClasses("md" | "sm")` for icon-only buttons — 32px rounded
+  square, or 24px round inside a pill. Internal; not in the barrel.
+- **Elevation tokens** (tokens.css): `shadow-popup` (Combobox list, Menu,
+  loading panel), `shadow-toast`, `shadow-modal` (Dialog), and `shadow-marker`
+  for the active row's inset teal bar (combobox option, menu item).
+- **Stacking**: popups that hang off a control are `z-20`; page-level layers
+  (the toast stack, a full-page overlay) are `z-50`.
+- **Disabled**: `opacity-50`, whether by `disabled` or `aria-disabled`.
+
 Focus styles use `outline-hidden`, never `outline-none`. In Tailwind v4,
 `outline-none` sets `outline-style: none`, and every focus indicator here is a
 ring or box-shadow — which Windows High Contrast (forced colors) removes, so

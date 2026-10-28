@@ -101,7 +101,7 @@ const stepTextStyles = "sr-only tablet:not-sr-only"
 const idleStyles = "cursor-pointer bg-transparent text-teal-700 hover:bg-bg-light-beige"
 const currentStyles = "bg-teal-PRIMARY text-neutral-white"
 const disabledStyles =
-  "cursor-not-allowed bg-transparent text-teal-700 opacity-40 [&[aria-disabled]]:pointer-events-none"
+  "cursor-not-allowed bg-transparent text-teal-700 opacity-50 [&[aria-disabled]]:pointer-events-none"
 
 export function Pagination({
   page: rawPage,

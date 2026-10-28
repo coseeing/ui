@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { LiveRegion, useAnnouncer } from "../LiveRegion/LiveRegion.js"
 import { cn } from "../../lib/cn.js"
 import { ChevronDownIcon, PlusIcon } from "../Icons/Icons.js"
+import { iconButtonClasses } from "../Button/Button.js"
 
 // ReorderableList — design-system extension (not in Figma). An ordered list
 // where every row has 上移 / 下移 / 移除 icon buttons — the keyboard and
@@ -95,8 +96,7 @@ type ReorderableListBase<T> = {
 type ReorderableListProps<T> = ReorderableListBase<T> &
   ({ layout?: "list"; label?: string } | { layout: "grid"; label: string })
 
-const iconButtonStyles =
-  "flex size-32 shrink-0 cursor-pointer items-center justify-center rounded-8 border-0 bg-transparent p-0 text-teal-700 transition-colors hover:bg-bg-light-beige aria-disabled:cursor-not-allowed aria-disabled:opacity-40 aria-disabled:hover:bg-transparent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-teal-PRIMARY"
+const iconButtonStyles = iconButtonClasses()
 
 export function ReorderableList<T>({
   items,
@@ -285,7 +285,7 @@ export function ReorderableList<T>({
   const labelStyles = "typography-body1 min-w-0 flex-1 text-teal-700"
 
   return (
-    <div className={className}>
+    <div className={cn(className)}>
       {items.length === 0 ? (
         <p
           ref={emptyRef}

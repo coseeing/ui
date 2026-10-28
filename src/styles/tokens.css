@@ -115,6 +115,15 @@
   --text-10xl: 5.2rem;
   --text-11xl: 6.4rem;
 
+  /* Elevation. Popups hang off a control (Combobox list, Menu, the loading
+     panel); a toast floats over the page; a modal sits above everything.
+     `marker` is the inset bar that marks the active row in a list (combobox
+     option, menu item) — teal-PRIMARY, 10.5:1 on its beige fill. */
+  --shadow-popup: 0 0.8rem 2.4rem rgb(16 36 42 / 0.16);
+  --shadow-toast: 0 0.8rem 2.4rem rgb(16 36 42 / 0.24);
+  --shadow-modal: 0 1.6rem 4rem rgb(16 36 42 / 0.25);
+  --shadow-marker: inset 0.4rem 0 0 var(--color-teal-PRIMARY);
+
   --radius-8: 0.8rem;
   --radius-16: 1.6rem;
   --radius-18: 1.8rem;

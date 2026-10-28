@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { LiveRegion, useAnnouncer } from "../LiveRegion/LiveRegion.js"
 import { cn } from "../../lib/cn.js"
 import { inputStyles, invalidStyles } from "../Input/Input.js"
+import { iconButtonClasses } from "../Button/Button.js"
 import { ChevronDownIcon, PlusIcon } from "../Icons/Icons.js"
 
 // Combobox / MultiCombobox — design-system extension (not in Figma). A text
@@ -468,7 +469,7 @@ function ComboboxBase({
 
       <div
         className={cn(
-          "absolute inset-x-0 top-full z-10 mt-4 overflow-hidden rounded-8 border border-bg-warm-gray bg-neutral-white shadow-[0_0.8rem_2.4rem_rgb(16_36_42_/_0.16)]",
+          "absolute inset-x-0 top-full z-20 mt-4 overflow-hidden rounded-8 border border-bg-warm-gray bg-neutral-white shadow-popup",
           !open && "hidden",
         )}
       >
@@ -503,7 +504,7 @@ function ComboboxBase({
                     // (1.24:1). Forced colors drops shadows and fills, so the
                     // option also gets a real outline there — it never holds
                     // DOM focus, so nothing else would mark it.
-                    "bg-bg-light-beige shadow-[inset_0.4rem_0_0_var(--color-teal-PRIMARY)] hover:bg-bg-light-beige forced-colors:outline-2 forced-colors:-outline-offset-2 forced-colors:outline-solid",
+                    "bg-bg-light-beige shadow-marker hover:bg-bg-light-beige forced-colors:outline-2 forced-colors:-outline-offset-2 forced-colors:outline-solid",
                 )}
               >
                 {row.kind === "create" ? (
@@ -670,7 +671,7 @@ export function MultiCombobox({
                 aria-label={l.remove(option.label)}
                 disabled={disabled}
                 onClick={() => remove(i)}
-                className="flex size-24 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-teal-700 transition-colors hover:bg-orange-200 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-teal-PRIMARY"
+                className={cn(iconButtonClasses("sm"), "hover:bg-orange-200")}
               >
                 <PlusIcon className="size-16 rotate-45" />
               </button>
