@@ -86,7 +86,7 @@ export function Dialog({
             type="button"
             aria-label={closeLabel}
             onClick={onClose}
-            className="-mr-4 flex size-32 shrink-0 cursor-pointer items-center justify-center rounded-8 border-0 bg-transparent p-0 text-teal-300 transition-colors hover:bg-bg-light-beige hover:text-teal-700 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-orange-PRIMARY"
+            className="-mr-4 flex size-32 shrink-0 cursor-pointer items-center justify-center rounded-8 border-0 bg-transparent p-0 text-teal-300 transition-colors hover:bg-bg-light-beige hover:text-teal-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-teal-PRIMARY"
           >
             <PlusIcon className="size-16 rotate-45" />
           </button>

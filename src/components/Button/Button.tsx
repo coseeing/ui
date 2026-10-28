@@ -6,6 +6,16 @@ const baseStyles =
 
 // Sourced from Figma "Brand" → Elements. States Default/Hover/Focused map to
 // default / hover: / focus-visible:. Buttons are flat (no shadow) per the design.
+//
+// Focus indicators (WCAG 1.4.11, 3:1 against what they sit on):
+// - Filled buttons draw an INSET ring, measured against their own focus
+//   fill, so it holds on any page surface, light or dark: orange on the
+//   teal fills 6.34, orange on danger's red-700 4.06, teal on primary-light's
+//   orange-500 4.35.
+// - greenStroke is transparent, so its indicator is the package-wide one: a
+//   teal-PRIMARY outline 2px outside the button (6.57:1 on its hover fill,
+//   8.9–11 on the brand surfaces). It used to swap its teal stroke for an
+//   orange ring — 1.19:1 on that fill, less visible focused than not.
 const variantStyles = {
   primary: {
     base: "rounded-[62px] px-36 py-12",
@@ -19,12 +29,12 @@ const variantStyles = {
     base: "rounded-8 px-16 py-8",
     // Small Button - Light: teal fill, off-white label, warm-gray hairline border.
     light:
-      "bg-teal-PRIMARY text-bg-light-off-white ring-1 ring-inset ring-bg-warm-gray hover:bg-teal-500 focus-visible:bg-teal-500 focus-visible:ring-2 focus-visible:ring-orange-PRIMARY",
+      "bg-teal-PRIMARY text-bg-light-off-white ring-1 ring-inset ring-bg-warm-gray hover:bg-teal-500 focus-visible:bg-teal-500 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-PRIMARY",
     // Small Button - Dark: teal fill, off-white label, no border.
     dark: "bg-teal-PRIMARY text-bg-light-off-white hover:bg-teal-500 focus-visible:bg-teal-500 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-PRIMARY",
     // Small Button - GreenStroke: transparent, teal label + teal stroke, neutral hover fill.
     greenStroke:
-      "bg-transparent text-teal-PRIMARY ring-1 ring-inset ring-teal-PRIMARY hover:bg-neutral-beige-gray focus-visible:bg-neutral-beige-gray focus-visible:ring-2 focus-visible:ring-orange-PRIMARY",
+      "bg-transparent text-teal-PRIMARY ring-1 ring-inset ring-teal-PRIMARY hover:bg-neutral-beige-gray focus-visible:bg-neutral-beige-gray focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-teal-PRIMARY",
     // danger: not in Figma — extension for SSO destructive actions (logout/delete).
     // Uses red-600 (not red-PRIMARY) so white text meets WCAG AA (>=4.5:1).
     danger:

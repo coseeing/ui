@@ -67,7 +67,7 @@ export function Tabs({ items, defaultIndex = 0, label, onChange, className }: Ta
               tabIndex={selected ? 0 : -1}
               onClick={() => select(i)}
               className={cn(
-                "-mb-px cursor-pointer appearance-none border-x-0 border-b-[0.3rem] border-t-0 border-solid bg-transparent px-16 py-8 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-orange-PRIMARY",
+                "-mb-px cursor-pointer appearance-none border-x-0 border-b-[0.3rem] border-t-0 border-solid bg-transparent px-16 py-8 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-teal-PRIMARY",
                 selected
                   ? "typography-strong1 border-orange-PRIMARY text-teal-PRIMARY"
                   : "typography-emphasised1 border-transparent text-neutral-dark-gray hover:text-teal-PRIMARY",
@@ -86,7 +86,7 @@ export function Tabs({ items, defaultIndex = 0, label, onChange, className }: Ta
           aria-labelledby={`${baseId}-tab-${i}`}
           hidden={i !== active}
           tabIndex={0}
-          className="rounded-8 pt-16 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-orange-PRIMARY"
+          className="rounded-8 pt-16 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-teal-PRIMARY"
         >
           {item.content}
         </div>

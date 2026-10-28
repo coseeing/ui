@@ -139,7 +139,7 @@ export function LoadingOverlay({
         tabIndex={-1}
         role="group"
         aria-labelledby={labelId}
-        className="flex items-center gap-12 rounded-16 bg-neutral-white px-24 py-16 text-teal-PRIMARY shadow-[0_0.8rem_2.4rem_rgb(16_36_42_/_0.16)] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-orange-PRIMARY"
+        className="flex items-center gap-12 rounded-16 bg-neutral-white px-24 py-16 text-teal-PRIMARY shadow-[0_0.8rem_2.4rem_rgb(16_36_42_/_0.16)] focus:outline-hidden focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-solid focus-visible:outline-teal-PRIMARY"
       >
         <SpinnerRing size="md" />
         <span id={labelId} className="typography-strong2 text-teal-700">

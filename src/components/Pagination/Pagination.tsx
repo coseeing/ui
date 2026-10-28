@@ -94,7 +94,7 @@ function pageItems(
 }
 
 const itemStyles =
-  "typography-strong2 inline-flex min-w-32 items-center justify-center gap-4 rounded-8 border-0 px-8 py-8 tablet:min-w-40 tablet:px-12 no-underline transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-orange-PRIMARY"
+  "typography-strong2 inline-flex min-w-32 items-center justify-center gap-4 rounded-8 border-0 px-8 py-8 tablet:min-w-40 tablet:px-12 no-underline transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-teal-PRIMARY"
 // Below tablet, previous/next go icon-only so ten pages fit a 375px row
 // without wrapping; the text stays as their accessible name.
 const stepTextStyles = "sr-only tablet:not-sr-only"

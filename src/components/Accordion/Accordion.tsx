@@ -20,7 +20,7 @@ export function Accordion({ items, className }: AccordionProps) {
     <div className={cn("flex w-full flex-col gap-16", className)}>
       {items.map((item, i) => (
         <details key={i} className="group w-full border-b border-teal-100 pb-16">
-          <summary className="typography-headline3 flex cursor-pointer list-none items-center justify-between gap-16 px-12 py-8 text-teal-PRIMARY focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-orange-PRIMARY [&::-webkit-details-marker]:hidden">
+          <summary className="typography-headline3 flex cursor-pointer list-none items-center justify-between gap-16 px-12 py-8 text-teal-PRIMARY [&::-webkit-details-marker]:hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-teal-PRIMARY">
             {item.question}
             <ChevronDownIcon className="w-[2.2rem] shrink-0 text-teal-300 transition-transform duration-200 group-open:rotate-180" />
           </summary>

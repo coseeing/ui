@@ -14,7 +14,7 @@ export function Select({ className, invalid, children, ...props }: SelectProps) 
       <select
         aria-invalid={invalid || undefined}
         className={cn(
-          "typography-body1 block w-full appearance-none rounded-8 border border-bg-warm-gray bg-neutral-white py-8 pl-16 pr-40 text-teal-700 transition-colors hover:border-teal-100 focus:border-teal-PRIMARY focus:outline-hidden focus-visible:ring-2 focus-visible:ring-orange-PRIMARY focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-white disabled:cursor-not-allowed disabled:opacity-50",
+          "typography-body1 block w-full appearance-none rounded-8 border border-bg-warm-gray bg-neutral-white py-8 pl-16 pr-40 text-teal-700 transition-colors hover:border-teal-100 focus:border-teal-PRIMARY focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-teal-PRIMARY",
           invalid && "border-red-PRIMARY focus:border-red-PRIMARY focus-visible:ring-red-PRIMARY",
           className,
         )}

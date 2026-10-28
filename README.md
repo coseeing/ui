@@ -704,6 +704,20 @@ were added with a story that renders every tone on every surface.
 building the static Storybook. That is expected: Storybook bundles an SPA where
 the directive is meaningless. It still matters in `dist/`, which is not bundled.
 
+Focus indicators follow two rules (WCAG 1.4.11, 3:1 against what they sit
+on — the old orange ring was 1.6–2.0:1 on the brand's light surfaces):
+
+- **On light surfaces** (white, off-white, beige — almost everything): a
+  `teal-PRIMARY` outline, 2px wide, 2px outside the control —
+  `focus-visible:outline-2 focus-visible:outline-offset-2
+  focus-visible:outline-solid focus-visible:outline-teal-PRIMARY`. 8.9–11:1 on
+  the surfaces; the gap keeps it distinct from teal fills and teal input
+  borders. `outline-solid` is needed because `outline-hidden` elsewhere on the
+  element sets the style to none.
+- **On teal surfaces, or inset in a filled button**: `orange-PRIMARY`, 5.5–6.3:1
+  on teal. Filled Buttons draw their ring inset, measured against their own
+  fill, so they work on any page surface.
+
 Focus styles use `outline-hidden`, never `outline-none`. In Tailwind v4,
 `outline-none` sets `outline-style: none`, and every focus indicator here is a
 ring or box-shadow — which Windows High Contrast (forced colors) removes, so

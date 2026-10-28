@@ -5,7 +5,7 @@ import { cn } from "../../lib/cn.js"
 // white field, teal text, orange focus ring). Keep visually in sync with the
 // `.ory-elements :is(input, …)` rules in globals.css.
 const inputStyles =
-  "typography-body1 block w-full rounded-8 border border-bg-warm-gray bg-neutral-white px-16 py-8 text-teal-700 transition-colors placeholder:text-neutral-dark-gray hover:border-teal-100 focus:border-teal-PRIMARY focus:outline-hidden focus-visible:ring-2 focus-visible:ring-orange-PRIMARY focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-white disabled:cursor-not-allowed disabled:opacity-50"
+  "typography-body1 block w-full rounded-8 border border-bg-warm-gray bg-neutral-white px-16 py-8 text-teal-700 transition-colors placeholder:text-neutral-dark-gray hover:border-teal-100 focus:border-teal-PRIMARY focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-teal-PRIMARY"
 
 const invalidStyles =
   "border-red-PRIMARY focus:border-red-PRIMARY focus-visible:ring-red-PRIMARY"

@@ -161,7 +161,7 @@ export type MultiComboboxProps = SharedProps & {
 }
 
 const inputStyles =
-  "typography-body1 block w-full rounded-8 border border-bg-warm-gray bg-neutral-white py-8 pl-16 pr-40 text-teal-700 transition-colors placeholder:text-neutral-dark-gray hover:border-teal-100 focus:border-teal-PRIMARY focus:outline-hidden focus-visible:ring-2 focus-visible:ring-orange-PRIMARY focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-white disabled:cursor-not-allowed disabled:opacity-50"
+  "typography-body1 block w-full rounded-8 border border-bg-warm-gray bg-neutral-white py-8 pl-16 pr-40 text-teal-700 transition-colors placeholder:text-neutral-dark-gray hover:border-teal-100 focus:border-teal-PRIMARY focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-teal-PRIMARY"
 
 const invalidStyles =
   "border-red-PRIMARY focus:border-red-PRIMARY focus-visible:ring-red-PRIMARY"
@@ -648,7 +648,7 @@ export function MultiCombobox({
                 aria-label={l.remove(option.label)}
                 disabled={disabled}
                 onClick={() => remove(i)}
-                className="flex size-24 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-teal-700 transition-colors hover:bg-orange-200 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-orange-PRIMARY disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex size-24 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-teal-700 transition-colors hover:bg-orange-200 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-teal-PRIMARY"
               >
                 <PlusIcon className="size-16 rotate-45" />
               </button>
