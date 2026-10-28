@@ -4,6 +4,7 @@ import { expect, userEvent, waitFor, within } from "storybook/test"
 import { LoadingOverlay } from "./LoadingOverlay.js"
 import { Button } from "../Button/Button.js"
 import { Card } from "../Card/Card.js"
+import { Dialog } from "../Dialog/Dialog.js"
 
 /**
  * LoadingOverlay — design-system extension (not in Figma). Covers `children`
@@ -141,5 +142,60 @@ export const FullPage: Story = {
     await waitFor(() => expect(status).toHaveTextContent("載入完畢"))
     await expect(canvasElement.closest("[inert]")).toBeNull()
     await waitFor(() => expect(trigger).toHaveFocus())
+  },
+}
+
+/**
+ * Started from inside a modal Dialog, the full-page overlay renders into that
+ * dialog: in <body> it would sit behind the modal — invisible, its panel
+ * unfocusable, its announcements lost. The dialog's own content is made inert
+ * instead, and focus comes back to the button afterwards.
+ */
+export const FullPageFromModalDialog: Story = {
+  render: function Render(args) {
+    const [dialog, setDialog] = useState(false)
+    const [active, setActive] = useState(false)
+    return (
+      <>
+        <Button variant="small" theme="dark" onClick={() => setDialog(true)}>
+          匯出
+        </Button>
+        <Dialog
+          open={dialog}
+          onClose={() => setDialog(false)}
+          title="匯出報名資料"
+          actions={
+            <Button
+              variant="small"
+              theme="dark"
+              onClick={() => {
+                setActive(true)
+                setTimeout(() => setActive(false), WORK_MS)
+              }}
+            >
+              開始匯出
+            </Button>
+          }
+        />
+        <LoadingOverlay {...args} active={active} fullPage label="匯出中" />
+      </>
+    )
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(canvas.getByRole("button", { name: "匯出" }))
+    const dialog = canvas.getByRole("dialog", { name: "匯出報名資料" })
+    const start = within(dialog).getByRole("button", { name: "開始匯出" })
+    await userEvent.click(start)
+
+    const panel = within(dialog).getByRole("group", { name: "匯出中" })
+    await expect(panel).toHaveFocus()
+    await expect(start.closest("[inert]")).not.toBeNull()
+    const status = within(dialog).getByRole("status")
+    await waitFor(() => expect(status).toHaveTextContent("匯出中"))
+
+    await waitFor(() => expect(status).toHaveTextContent("載入完畢"))
+    await expect(start.closest("[inert]")).toBeNull()
+    await waitFor(() => expect(start).toHaveFocus())
   },
 }

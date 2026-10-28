@@ -8,9 +8,18 @@
 // hover/focus pause are kept here, created on the first open toast and
 // removed with the last.
 //
+// Where the stack lives: <body>, or — while a modal <dialog> is open — inside
+// the topmost one. showModal() makes everything outside the dialog inert and
+// hidden from assistive tech, so a toast raised from inside a dialog (say,
+// 儲存失敗 from its form) would otherwise be unseeable and unclosable until
+// the dialog closed. A MutationObserver moves the stack in when a dialog
+// opens and back out when it closes or is removed.
+//
 // The pause belongs to the stack, not the card: while the pointer is over any
 // toast, or focus is in one, none of them time out — nobody loses the toast
 // under the one they are reading.
+
+import { modalHost } from "../../lib/modalHost.js"
 
 export type ToastPosition = "top-center" | "top-right" | "bottom-center" | "bottom-right"
 
@@ -31,6 +40,31 @@ type Stack = {
 }
 
 const stacks = new Map<ToastPosition, Stack>()
+
+function place(stack: Stack) {
+  const target = modalHost()
+  if (stack.el.parentElement !== target) target.appendChild(stack.el)
+}
+
+// Re-place every stack when a dialog opens or closes (its `open` attribute)
+// or the DOM around it changes (a dialog unmounted while open would take the
+// stack with it). Cheap: one selector query per stack per batch.
+let observer: MutationObserver | null = null
+function watch() {
+  if (observer || typeof MutationObserver === "undefined") return
+  observer = new MutationObserver(() => stacks.forEach(place))
+  observer.observe(document.documentElement, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: ["open"],
+  })
+}
+function unwatch() {
+  if (stacks.size > 0) return
+  observer?.disconnect()
+  observer = null
+}
 const listeners = new Map<ToastPosition, Set<() => void>>()
 
 const emit = (position: ToastPosition) => listeners.get(position)?.forEach((fn) => fn())
@@ -57,8 +91,9 @@ function create(position: ToastPosition, label: string): Stack {
     if (outside(e)) (stack.focused = false), emit(position)
   })
 
-  document.body.appendChild(el)
   stacks.set(position, stack)
+  place(stack)
+  watch()
   return stack
 }
 
@@ -79,6 +114,7 @@ export function unregister(position: ToastPosition, id: string) {
   if (stack.ids.length === 0) {
     stack.el.remove()
     stacks.delete(position)
+    unwatch()
   }
   emit(position)
 }

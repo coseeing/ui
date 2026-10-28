@@ -240,7 +240,9 @@ so values line up. No state, so it renders on the server.
   to the overlay panel and returns afterwards. An always-mounted live region
   announces `label` on start and `doneLabel` (「載入完畢」) on finish.
 - `fullPage` renders into `<body>` via a portal and sets `inert` on every other
-  child of `<body>`, restoring each afterwards.
+  child of `<body>`, restoring each afterwards. Started while a modal `Dialog`
+  is open, it renders into that dialog instead (in `<body>` it would sit behind
+  the modal) and makes the dialog's own content inert.
 
 ### ReorderableList
 
@@ -365,7 +367,10 @@ const [saved, setSaved] = useState(false)
 ```
 
 - Open toasts with the same `position` share one stack in `<body>` (created
-  with the first, removed with the last), in the order they opened. Past
+  with the first, removed with the last), in the order they opened. While a
+  modal `Dialog` is open the stack moves inside it — `showModal()` makes
+  everything outside inert, so a toast raised from the dialog's form would
+  otherwise be unseeable and unclosable — and back out when it closes. Past
   `max`, a toast waits — not shown, not announced, timer stopped — until an
   earlier one closes.
 - Each `<Toast open>` keeps its own `LiveRegion` mounted for as long as the

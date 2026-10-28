@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { LiveRegion, useAnnouncer } from "../LiveRegion/LiveRegion.js"
 import { cn } from "../../lib/cn.js"
+import { modalHost } from "../../lib/modalHost.js"
 import { SpinnerRing } from "../Spinner/Spinner.js"
 
 // LoadingOverlay — design-system extension (not in Figma). Blocks a region (or
@@ -19,8 +20,11 @@ import { SpinnerRing } from "../Spinner/Spinner.js"
 // and the end (doneLabel) are heard.
 //
 // fullPage cannot make "the rest of the page" inert from where it sits in the
-// tree, so it renders into <body> through a portal and sets `inert` on every
-// other child of <body>, restoring each one's previous state afterwards.
+// tree, so it renders through a portal and sets `inert` on every sibling of
+// its host, restoring each one's previous state afterwards. The host is
+// <body> — or, if a modal <dialog> is open when it activates, that dialog:
+// everything outside a modal is already inert, so an overlay in <body> would
+// be invisible behind it, its panel unfocusable and its announcements lost.
 // (A modal <dialog> would make the background inert for free, but takes its
 // own content out of the page when closed, which is exactly when "載入完畢"
 // has to be announced.)
@@ -73,12 +77,24 @@ export function LoadingOverlay({
     say(active ? label : doneLabel)
   }, [active, mounted, label, doneLabel, say])
 
-  // Full page: make every other child of <body> inert while active.
+  // Full page: the portal target. Chosen during render as the overlay
+  // activates, so the region is mounted in its new home one commit before
+  // the announcement effect writes into it — moving it in the same commit as
+  // its text would make it a region inserted together with its text. Kept
+  // while inactive, so 載入完畢 is said in the same region.
+  const target = useRef<HTMLElement | null>(null)
+  if (mounted && fullPage && (active || !target.current?.isConnected)) {
+    target.current = modalHost()
+  }
+
+  // Full page: make every other child of the host inert while active.
   useEffect(() => {
     if (!fullPage || !active || !mounted) return
     const host = portalRef.current
+    const parent = host?.parentElement
+    if (!parent) return
     const touched: HTMLElement[] = []
-    for (const el of Array.from(document.body.children)) {
+    for (const el of Array.from(parent.children)) {
       if (el === host || !(el instanceof HTMLElement) || el.inert) continue
       el.inert = true
       touched.push(el)
@@ -136,13 +152,13 @@ export function LoadingOverlay({
   const region = <LiveRegion message={message} />
 
   if (fullPage) {
-    return mounted
+    return mounted && target.current
       ? createPortal(
           <div ref={portalRef} className={className}>
             {panel}
             {region}
           </div>,
-          document.body,
+          target.current,
         )
       : null
   }

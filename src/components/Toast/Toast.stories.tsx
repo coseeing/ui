@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import { expect, fn, userEvent, waitFor, within } from "storybook/test"
 import { Toast, type ToastTone } from "./Toast.js"
 import { Button } from "../Button/Button.js"
+import { Dialog } from "../Dialog/Dialog.js"
 
 /**
  * Toast — design-system extension (not in Figma). Dark teal card with a tone
@@ -279,5 +280,68 @@ export const ManagedCloseMovesFocus: Story = {
     await userEvent.keyboard("{Enter}")
     await waitFor(() => expect(stack()).toBeNull())
     await expect(lastPressed).toHaveFocus()
+  },
+}
+
+/**
+ * A toast raised from inside a modal Dialog is usable. showModal() makes
+ * everything outside the dialog inert, so the stack moves into the dialog
+ * while it is open — and back to <body> when it closes, where the (danger,
+ * so persistent) toast stays.
+ */
+export const ManagedInsideModalDialog: Story = {
+  parameters: { layout: "fullscreen" },
+  render: function Render() {
+    const [dialog, setDialog] = useState(false)
+    const [failed, setFailed] = useState(false)
+    return (
+      <div className="p-16">
+        <Button variant="small" theme="dark" onClick={() => setDialog(true)}>
+          編輯活動
+        </Button>
+        <Dialog
+          open={dialog}
+          onClose={() => setDialog(false)}
+          title="編輯活動"
+          actions={
+            <Button variant="small" theme="dark" onClick={() => setFailed(true)}>
+              儲存
+            </Button>
+          }
+        />
+        <Toast
+          open={failed}
+          onClose={() => setFailed(false)}
+          tone="danger"
+          title="儲存失敗"
+          message="請檢查網路連線後再試一次。"
+        />
+      </div>
+    )
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(canvas.getByRole("button", { name: "編輯活動" }))
+    const dialog = canvas.getByRole("dialog", { name: "編輯活動" })
+    await userEvent.click(within(dialog).getByRole("button", { name: "儲存" }))
+
+    await waitFor(() => expect(stack()).not.toBeNull())
+    await expect(dialog.contains(stack())).toBe(true)
+    const close = closeButtons()[0]!
+    // Reachable: it takes focus, and it is what is under the pointer there.
+    close.focus()
+    await expect(close).toHaveFocus()
+    const r = close.getBoundingClientRect()
+    await expect(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest("button")).toBe(close)
+
+    // Closing the dialog moves the stack back out, toast still showing.
+    // ✕ rather than Esc: userEvent's synthetic keys do not trigger native
+    // <dialog> dismissal (see Dialog's stories).
+    await userEvent.click(within(dialog).getByRole("button", { name: "關閉" }))
+    await waitFor(() => expect(dialog).not.toBeVisible())
+    await waitFor(() => expect(stack()?.parentElement).toBe(document.body))
+    await expect(closeButtons()).toHaveLength(1)
+    await userEvent.click(closeButtons()[0]!)
+    await waitFor(() => expect(stack()).toBeNull())
   },
 }
