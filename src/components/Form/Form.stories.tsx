@@ -146,6 +146,32 @@ export const DescribedByFollowsState: Story = {
   },
 }
 
+/**
+ * The always-mounted error region adds no space while empty: the field ends
+ * at its hint, not 8px below it. With an error, the message sits the usual
+ * 8px under the control.
+ */
+export const NoGapFromEmptyErrorRegion: Story = {
+  render: () => (
+    <div className="grid max-w-[40rem] gap-16">
+      <Field label="Email" htmlFor="gap-email" hint="We never share it.">
+        <Input id="gap-email" type="email" aria-describedby={fieldDescribedBy("gap-email")} />
+      </Field>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const input = within(canvasElement).getByLabelText("Email")
+    const field = input.parentElement!
+    const hint = document.getElementById("gap-email-hint")!
+    await expect(field.getBoundingClientRect().bottom).toBeCloseTo(
+      hint.getBoundingClientRect().bottom,
+      0,
+    )
+    // Still mounted and still a live region.
+    await expect(document.getElementById("gap-email-error")).toHaveAttribute("aria-live", "polite")
+  },
+}
+
 export const Disabled: Story = {
   render: () => (
     <div className="grid max-w-[40rem] gap-16">

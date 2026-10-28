@@ -105,8 +105,17 @@ export function Field({
       {/* Always-mounted live region so screen readers reliably announce
           errors that appear later; the message itself skips role="alert".
           It carries the error id, so aria-describedby can point at it even
-          while it is empty. */}
-      <div id={htmlFor ? `${htmlFor}-error` : undefined} aria-live="polite">
+          while it is empty. Empty, it would still take a grid row and add
+          the 8px gap under the last line. `empty:absolute` takes it out of
+          the grid flow while empty (a negative margin cannot cancel a grid
+          gap) — not display:none, which would drop the region from the a11y
+          tree and make it "inserted with its text" again when an error
+          arrives. Absolute is how sr-only hides things too. */}
+      <div
+        id={htmlFor ? `${htmlFor}-error` : undefined}
+        aria-live="polite"
+        className="empty:absolute"
+      >
         {error ? <ValidationMessage announce={false}>{error}</ValidationMessage> : null}
       </div>
     </div>
