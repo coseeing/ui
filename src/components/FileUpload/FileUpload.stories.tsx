@@ -1,0 +1,340 @@
+import { useState } from "react"
+import type { Meta, StoryObj } from "@storybook/react-vite"
+import { expect, fireEvent, fn, userEvent, waitFor, within } from "storybook/test"
+import { FileUpload } from "./FileUpload.js"
+import { Field } from "../Field/Field.js"
+import { Button } from "../Button/Button.js"
+
+/**
+ * FileUpload — design-system extension (not in Figma). A real `<button>`
+ * drives a hidden `<input type="file">` (tabIndex −1, aria-hidden). The chosen
+ * file's name is announced through a persistent live region; the preview has
+ * alt text. Drag and drop is a shortcut, never the only way. `value` is a new
+ * File, the URL of an existing file, or null.
+ */
+
+// A real 1×1 PNG, so object-URL previews actually load in the tests.
+const PNG_BASE64 =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+const PNG_DATA_URL = `data:image/png;base64,${PNG_BASE64}`
+const png = (name: string) =>
+  new File([Uint8Array.from(atob(PNG_BASE64), (c) => c.charCodeAt(0))], name, {
+    type: "image/png",
+  })
+
+/** Sets the hidden input's files and fires change, as the picker would. */
+function pick(input: HTMLInputElement, file: File) {
+  const dt = new DataTransfer()
+  dt.items.add(file)
+  input.files = dt.files
+  fireEvent.change(input)
+}
+
+const fileInput = (root: HTMLElement) =>
+  root.querySelector<HTMLInputElement>('input[type="file"]')!
+
+type Args = React.ComponentProps<typeof FileUpload>
+
+function Demo({ value: initial = null, ...args }: Partial<Args>) {
+  const [value, setValue] = useState<File | string | null>(initial)
+  return (
+    <Field label="封面圖片" htmlFor="cover" className="w-[44rem] max-w-full">
+      <FileUpload
+        accept="image/*"
+        preview
+        {...args}
+        id="cover"
+        value={value}
+        onChange={(file) => {
+          setValue(file)
+          args.onChange?.(file)
+        }}
+        onRemove={() => {
+          setValue(null)
+          args.onRemove?.()
+        }}
+      />
+    </Field>
+  )
+}
+
+const meta = {
+  title: "Components/FileUpload",
+  component: FileUpload,
+  parameters: { layout: "padded" },
+  args: {
+    value: null,
+    onChange: fn(),
+    onRemove: fn(),
+    preview: true,
+    invalid: false,
+    disabled: false,
+    accept: "image/*",
+  },
+  argTypes: {
+    value: { table: { disable: true } },
+  },
+  render: (args) => <Demo {...args} />,
+} satisfies Meta<typeof FileUpload>
+
+export default meta
+type Story = StoryObj<typeof meta>
+
+/** Choose, replace, remove — or drop a file on the tile. */
+export const Playground: Story = {}
+
+/**
+ * The trigger is a real button whose name keeps both the field label and the
+ * action; the native input is out of the tab order and the a11y tree.
+ */
+export const Semantics: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const trigger = canvas.getByRole("button", { name: "封面圖片，選擇圖片" })
+    await expect(trigger.tagName).toBe("BUTTON")
+    // <Label htmlFor> still reaches it.
+    await expect(canvas.getByLabelText(/封面圖片/)).toBe(trigger)
+
+    const input = fileInput(canvasElement)
+    await expect(input).toHaveAttribute("tabindex", "-1")
+    await expect(input).toHaveAttribute("aria-hidden", "true")
+
+    // No value: no remove action, and no preview image.
+    await expect(canvas.queryByRole("button", { name: /刪除圖片/ })).toBeNull()
+    // The state is part of the description: nothing chosen yet.
+    await expect(canvas.getByRole("button", { name: "封面圖片，選擇圖片" })).toHaveAccessibleDescription("未設定")
+    await expect(canvas.queryByRole("img")).toBeNull()
+  },
+}
+
+/**
+ * Re-selecting works twice in a row — including the same file. The browser
+ * fires no change event when the input already holds the chosen file, so the
+ * input is emptied just before the picker opens; cancelling the picker puts
+ * the file back, so a form still has it.
+ */
+export const ReselectTwice: Story = {
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    const input = fileInput(canvasElement)
+    const status = canvas.getByRole("status")
+
+    const first = png("first.png")
+    pick(input, first)
+    await expect(args.onChange).toHaveBeenLastCalledWith(first)
+    await expect(input.files?.[0]).toBe(first) // kept, for form submission
+    await expect(status).toHaveTextContent("已選擇 first.png")
+    await waitFor(() =>
+      expect(canvas.getByRole("img", { name: "預覽：first.png" })).toBeVisible(),
+    )
+    // After choosing, the trigger says which file is set — not just 重新選取.
+    const trigger = canvas.getByRole("button", { name: "封面圖片，重新選取" })
+    await expect(trigger).toHaveAccessibleDescription("first.png")
+
+    // Opening the picker empties the input, so picking first.png again is a
+    // change. (A synthetic click opens no real picker, which is what lets
+    // the test look at the input in between.)
+    await userEvent.click(trigger)
+    await expect(input).toHaveValue("")
+    // Cancelling puts the file back.
+    input.dispatchEvent(new Event("cancel"))
+    await expect(input.files?.[0]).toBe(first)
+
+    const second = png("second.png")
+    await userEvent.click(trigger)
+    pick(input, second)
+    await expect(args.onChange).toHaveBeenLastCalledWith(second)
+    await waitFor(() =>
+      expect(canvas.getByRole("img", { name: "預覽：second.png" })).toBeVisible(),
+    )
+
+    // The same file once more.
+    await userEvent.click(trigger)
+    pick(input, second)
+    await expect(args.onChange).toHaveBeenCalledTimes(3)
+  },
+}
+
+/**
+ * With `name`, a native form submits the file the user sees: one picked, one
+ * dropped, or none once it is removed (or while the value is an existing URL).
+ */
+export const SubmitsWithForm: Story = {
+  render: (args) => (
+    <form aria-label="活動資料">
+      <Demo {...args} name="cover" />
+    </form>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const form = canvas.getByRole("form", { name: "活動資料" }) as HTMLFormElement
+    const submitted = () => new FormData(form).get("cover")
+
+    const picked = png("picked.png")
+    pick(fileInput(canvasElement), picked)
+    await expect(submitted()).toBe(picked)
+
+    const dropped = png("dropped.png")
+    const dataTransfer = new DataTransfer()
+    dataTransfer.items.add(dropped)
+    const trigger = canvas.getByRole("button", { name: "封面圖片，重新選取" })
+    for (const type of ["dragover", "drop"]) {
+      trigger.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer }))
+    }
+    await waitFor(() => expect(submitted()).toBe(dropped))
+
+    await userEvent.click(canvas.getByRole("button", { name: "封面圖片，刪除圖片" }))
+    await waitFor(() => expect((submitted() as File).size).toBe(0)) // empty file part
+  },
+}
+
+/**
+ * Without a <label>, `aria-label` (or `aria-labelledby`) names the field, and
+ * is combined with each button's action just as a label's text would be.
+ */
+export const NamedWithoutLabel: Story = {
+  render: () => (
+    <div className="grid gap-16">
+      <FileUpload value={PNG_DATA_URL} onChange={() => {}} onRemove={() => {}} aria-label="封面圖片" />
+      <p id="avatar-heading" className="typography-strong2 m-0 text-teal-700">
+        大頭貼
+      </p>
+      <FileUpload value={null} onChange={() => {}} aria-labelledby="avatar-heading" />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole("button", { name: "封面圖片，重新選取" })).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "封面圖片，刪除圖片" })).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "大頭貼 選擇圖片" })).toBeVisible()
+  },
+}
+
+/**
+ * An existing file arrives as a URL: preview and 刪除 show straight away.
+ * Removing hands focus to the trigger rather than dropping it.
+ */
+export const ExistingUrl: Story = {
+  args: { value: PNG_DATA_URL },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    await waitFor(() =>
+      expect(canvas.getByRole("img", { name: "預覽：目前的圖片" })).toBeVisible(),
+    )
+    const trigger = canvas.getByRole("button", { name: "封面圖片，重新選取" })
+
+    // Named with the field, so several uploaders on a page are distinguishable.
+    await userEvent.click(canvas.getByRole("button", { name: "封面圖片，刪除圖片" }))
+    await expect(args.onRemove).toHaveBeenCalledOnce()
+    await expect(trigger).toHaveFocus()
+    await expect(trigger).toHaveAccessibleName("封面圖片，選擇圖片")
+    await expect(canvas.getByRole("status")).toHaveTextContent("已刪除")
+    await expect(canvas.queryByRole("img")).toBeNull()
+  },
+}
+
+/**
+ * A URL that fails to load shows an error — not the empty state. The value
+ * is still set: the file name stays, and so do 重新選取 and 刪除.
+ */
+export const BrokenImage: Story = {
+  args: { value: "/missing/uploads/cover%20photo.jpg" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const trigger = canvas.getByRole("button", { name: "封面圖片，重新選取" })
+
+    await waitFor(() => expect(trigger).toHaveAccessibleDescription("cover photo.jpg 圖片無法載入"))
+    await waitFor(() => expect(canvas.getByRole("status")).toHaveTextContent("圖片無法載入"))
+    await expect(canvas.queryByRole("img")).toBeNull()
+    await expect(canvas.getByRole("button", { name: "封面圖片，刪除圖片" })).toBeVisible()
+  },
+}
+
+/** Dropping works too, and a file outside `accept` is refused out loud. */
+export const DropFile: Story = {
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    const trigger = canvas.getByRole("button", { name: "封面圖片，選擇圖片" })
+    // Native DragEvents: in a real browser `dataTransfer` is a read-only
+    // getter, so fireEvent's way of attaching it leaves it null.
+    const drop = (file: File) => {
+      const dataTransfer = new DataTransfer()
+      dataTransfer.items.add(file)
+      for (const type of ["dragover", "drop"]) {
+        trigger.dispatchEvent(
+          new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer }),
+        )
+      }
+    }
+
+    drop(new File(["hello"], "notes.txt", { type: "text/plain" }))
+    await expect(args.onChange).not.toHaveBeenCalled()
+    await expect(canvas.getByRole("status")).toHaveTextContent("不支援這個檔案類型")
+    await expect(trigger).toHaveAccessibleDescription("未設定 不支援這個檔案類型")
+
+    const photo = png("dropped.png")
+    drop(photo)
+    await expect(args.onChange).toHaveBeenCalledWith(photo)
+    await expect(canvas.getByRole("status")).toHaveTextContent("已選擇 dropped.png")
+  },
+}
+
+/** Without `preview`: name and actions only, for non-image files. */
+export const WithoutPreview: Story = {
+  args: {
+    preview: false,
+    accept: ".pdf",
+    labels: { choose: "選擇檔案", replace: "重新選取", remove: "刪除檔案" },
+    value: "https://example.com/files/%E5%A0%B1%E5%91%8A.pdf",
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.queryByRole("img")).toBeNull()
+    await expect(canvas.getByRole("button", { name: "封面圖片，刪除檔案" })).toBeVisible()
+  },
+}
+
+/**
+ * The button names follow the field label when it changes later (a locale
+ * switch, say) — the label text is re-read after every render, not once.
+ */
+export const LabelChangesLater: Story = {
+  args: { value: PNG_DATA_URL },
+  render: function Render(args) {
+    const [en, setEn] = useState(false)
+    return (
+      <div className="grid gap-16">
+        <Field label={en ? "Cover image" : "封面圖片"} htmlFor="cover-i18n" className="w-[44rem] max-w-full">
+          <FileUpload {...args} id="cover-i18n" onChange={() => {}} onRemove={() => {}} />
+        </Field>
+        <div>
+          <Button variant="small" theme="greenStroke" onClick={() => setEn(true)}>
+            English
+          </Button>
+        </div>
+      </div>
+    )
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole("button", { name: "封面圖片，重新選取" })).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "English" }))
+    await waitFor(() =>
+      expect(canvas.getByRole("button", { name: "Cover image，重新選取" })).toBeVisible(),
+    )
+    await expect(canvas.getByRole("button", { name: "Cover image，刪除圖片" })).toBeVisible()
+  },
+}
+
+/** The field + action composition is overridable too, punctuation included. */
+export const CustomLabels: Story = {
+  args: {
+    value: PNG_DATA_URL,
+    labels: { replace: "Replace", remove: "Remove", named: (field, action) => `${action} ${field}` },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole("button", { name: "Replace 封面圖片" })).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Remove 封面圖片" })).toBeVisible()
+  },
+}

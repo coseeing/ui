@@ -3,6 +3,8 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import { expect, fireEvent, fn, userEvent, waitFor, within } from "storybook/test"
 import { Dialog } from "./Dialog.js"
 import { Button } from "../Button/Button.js"
+import { Field, fieldDescribedBy } from "../Field/Field.js"
+import { Input } from "../Input/Input.js"
 
 /**
  * Dialog — design-system extension (not in Figma), in the brand language: the
@@ -177,7 +179,13 @@ export const ClosesOnBackdropClick: Story = {
   },
 }
 
-/** Destructive confirmation — pairs with the danger Button. */
+/**
+ * Destructive confirmation — pairs with the danger Button. With no body, the
+ * buttons sit in the white panel (no footer bar), with the same space above
+ * and below them — tighter than the top padding, because bordered buttons
+ * show all the white beneath them while the title's line box adds
+ * half-leading above its glyphs.
+ */
 export const Confirmation: Story = {
   render: () => {
     const [open, setOpen] = useState(false)
@@ -204,5 +212,76 @@ export const Confirmation: Story = {
         />
       </>
     )
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(canvas.getByRole("button", { name: "刪除帳號" }))
+    const dialog = canvas.getByRole("dialog", { name: "確定要刪除帳號嗎?" })
+
+    const box = dialog.getBoundingClientRect()
+    const title = within(dialog).getByRole("heading").getBoundingClientRect()
+    const description = dialog.querySelector("p")!.getBoundingClientRect()
+    const actions = within(dialog).getByRole("button", { name: "永久刪除" }).parentElement!
+    const buttons = within(dialog).getByRole("button", { name: "永久刪除" }).getBoundingClientRect()
+
+    const top = title.top - box.top - 1 // minus the 1px border
+    const above = buttons.top - description.bottom
+    const below = box.bottom - 1 - buttons.bottom
+    await expect(below).toBeCloseTo(above, 0)
+    await expect(below).toBeLessThan(top)
+    // No footer bar without a body.
+    await expect(getComputedStyle(actions).borderTopWidth).toBe("0px")
+  },
+}
+
+/**
+ * With a body: header, the content 16px below it, then the actions in a
+ * footer bar that separates them from the content.
+ */
+export const WithContent: Story = {
+  render: () => {
+    const [open, setOpen] = useState(false)
+    return (
+      <>
+        <Button variant="small" theme="dark" onClick={() => setOpen(true)}>
+          邀請成員
+        </Button>
+        <Dialog
+          open={open}
+          onClose={() => setOpen(false)}
+          size="md"
+          title="邀請成員"
+          description="對方會收到一封加入專案的邀請信。"
+          actions={
+            <>
+              <Button variant="small" theme="greenStroke" onClick={() => setOpen(false)}>
+                取消
+              </Button>
+              <Button variant="small" theme="dark" onClick={() => setOpen(false)}>
+                送出邀請
+              </Button>
+            </>
+          }
+        >
+          <Field label="電子郵件" htmlFor="invite-email" hint="可以輸入多個，用逗號分隔。">
+            <Input id="invite-email" type="email" aria-describedby={fieldDescribedBy("invite-email")} />
+          </Field>
+        </Dialog>
+      </>
+    )
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(canvas.getByRole("button", { name: "邀請成員" }))
+    const dialog = canvas.getByRole("dialog", { name: "邀請成員" })
+
+    const box = dialog.getBoundingClientRect()
+    const title = within(dialog).getByRole("heading").getBoundingClientRect()
+    const hint = document.getElementById("invite-email-hint")!.getBoundingClientRect()
+    const footer = within(dialog).getByRole("button", { name: "送出邀請" }).parentElement!
+
+    // The body ends as far above the footer bar as the title starts below the top.
+    await expect(footer.getBoundingClientRect().top - hint.bottom).toBeCloseTo(title.top - box.top - 1, 0)
+    await expect(getComputedStyle(footer).borderTopWidth).toBe("1px")
   },
 }
