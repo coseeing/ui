@@ -26,12 +26,12 @@ src/
 | Actions & nav | `Button`, `Link`, `Menu`, `Pagination` |
 | Form | `Field`, `Label`, `ValidationMessage`, `Input`, `Textarea`, `Checkbox`, `Select`, `FileUpload`, `Combobox`, `MultiCombobox` |
 | Data | `Badge`, `Tag`, `Table`, `DescriptionList`, `ReorderableList` |
-| Disclosure & feedback | `Accordion`, `Tabs`, `Dialog`, `Toast`, `ToastRegion`, `LiveRegion`, `Spinner`, `LoadingOverlay` |
+| Disclosure & feedback | `Accordion`, `Tabs`, `Dialog`, `Toast`, `LiveRegion`, `Spinner`, `LoadingOverlay` |
 | Icons | 13 brand icons from `Icons` |
 
 Also exported: `cn`, `fieldDescribedBy`, `useAnnouncer`, and the `LinkProps` / `AnchorLike` / `TableColumn` /
 `TabItem` / `AccordionEntry` / `ComboboxOption` / `ComboboxLabels` /
-`ComboboxProps` / `MultiComboboxProps` / `PaginationLabels` / `FileUploadLabels` / `DescriptionItem` / `ReorderableListLabels` / `MenuItem` / `MenuTrigger` / `ToastTone` / `ToastEntry` / `Announcement` types.
+`ComboboxProps` / `MultiComboboxProps` / `PaginationLabels` / `FileUploadLabels` / `DescriptionItem` / `ReorderableListLabels` / `MenuItem` / `MenuTrigger` / `ToastTone` / `ToastPosition` / `Announcement` types.
 
 There is no provider to mount and nothing to configure globally. Components
 take what they need as props.
@@ -324,47 +324,50 @@ const { message, say } = useAnnouncer()
 - The same text twice in a row is still announced.
 - `politeness="assertive"` (`role="alert"`) interrupts — keep it for errors.
 
-Combobox, FileUpload, ReorderableList, LoadingOverlay and ToastRegion announce
+Combobox, FileUpload, ReorderableList, LoadingOverlay and Toast announce
 through it. Visible live text — Field's error, Pagination's status line — is
 the content itself, not a copy, so it is not cleared.
 
-### Toasts: `ToastRegion`
+### Toasts: `<Toast open>`
 
-The app owns the list; the region decides where, how many, and how long.
-There is no provider — mount it once near the root and keep it mounted:
+One component per notification, like `Dialog`: put it in the JSX and flip
+`open`. No list to manage and no provider.
 
 ```tsx
-const [toasts, setToasts] = useState<ToastEntry[]>([])
-const notify = (t: Omit<ToastEntry, "id">) =>
-  setToasts((list) => [...list, { ...t, id: crypto.randomUUID() }])
+const [saved, setSaved] = useState(false)
 
-<ToastRegion
-  toasts={toasts}
-  onDismiss={(id) => setToasts((list) => list.filter((t) => t.id !== id))}
-  position="top-center"   // default; also top-right, bottom-center, bottom-right
-  max={3}                 // the rest wait, timers not yet running
-  duration={5000}         // ms; null = until closed
+<Button onClick={async () => { await save(); setSaved(true) }}>儲存</Button>
+<Toast
+  open={saved}
+  onClose={() => setSaved(false)}   // close button, and on timeout
+  tone="success"
+  title="已儲存"
+  message="你的變更已儲存。"
+  // optional:
+  autoHide={5000}                   // ms; null = until closed. Danger defaults to null.
+  position="top-center"             // also top-right, bottom-center, bottom-right
+  max={3}                           // shown at once per position; later ones wait
 />
-
-notify({ tone: "success", title: "已儲存", message: "你的變更已儲存。" })
 ```
 
-- Its two live regions (`LiveRegion`) are always mounted, before any toast exists:
-  `danger` is written to the assertive one, everything else to the polite
-  one. The cards carry no role of their own, so nothing is announced twice
-  and nothing depends on a region inserted together with its text. The
-  region text is cleared after 7s, so browsing later finds each toast once.
-- Danger toasts stay until closed unless given a `duration`; an error should
+- Open toasts with the same `position` share one stack in `<body>` (created
+  with the first, removed with the last), in the order they opened. Past
+  `max`, a toast waits — not shown, not announced, timer stopped — until an
+  earlier one closes.
+- Each `<Toast open>` keeps its own `LiveRegion` mounted for as long as the
+  component is, open or not, and writes its text there when it appears:
+  assertive for `danger`, polite otherwise. The card itself has no role, so
+  nothing depends on a region inserted together with its text, and the region
+  text clears after 7s so it does not linger beside the card. Keep the
+  component mounted and toggle `open` — don't render it conditionally, or its
+  region is created at the same moment as its text.
+- Danger toasts stay until closed unless given an `autoHide`; an error should
   not vanish unread.
-- Timers pause while the pointer is over the region or focus is inside it.
-- Every toast has a close button (「關閉通知」, `closeLabel`). Closing moves
-  focus to the next toast, or back to where it was before entering the region.
-- `Toast` itself no longer has `role="alert"` / `role="status"`. Those made
-  each toast a live region inserted together with its text, which screen
-  readers announce unreliably (VoiceOver often skips `status` entirely). It
-  gained `onClose`/`closeLabel`. A `Toast` rendered outside `ToastRegion` is
-  not announced — fine for static content; for anything that appears at
-  runtime, use the region or your own always-mounted live region.
+- Timers pause while the pointer is over the stack or focus is inside it.
+- The close button is 「關閉通知」 (`closeLabel`). Closing moves focus to the
+  next toast, or back to where it was before entering the stack.
+- Without `open`, `Toast` is a static card rendered in place: no timer, no
+  announcement — for content that is on the page from the start.
 
 ### Badge tones
 
@@ -478,7 +481,7 @@ const [topics, setTopics] = useState<ComboboxOption[]>([])
 
 The build preserves the module graph, so `"use client"` stays on just the
 files that actually need it — `Dialog`, `Tabs`, `Combobox`, `FileUpload`,
-`LoadingOverlay`, `ReorderableList`, `Menu`, `ToastRegion`, and
+`LoadingOverlay`, `ReorderableList`, `Menu`, `Toast`, and
 `LiveRegion`, the only components with state. Everything else, including `Link` and `Button`, renders on the server.
 Importing `Button` does not drag `Table` into the bundle.
 
@@ -614,12 +617,12 @@ What the story tests actually pin down, beyond "it renders":
   Home/End and typeahead; activation returns focus; disabled items are
   reachable and inert; Esc, Tab and outside-click close; the viewport flip;
   icon-only naming.
-- **Toast / ToastRegion** — the close button and `closeLabel`; no tone gives
-  the card a live-region role of its own;
-  live regions present before any toast, danger to the assertive one and the
-  rest polite, no role on the cards; `max` with queued toasts announced as
-  they appear; auto-dismiss paused by hover and by focus; danger stays; focus
-  after closing.
+- **Toast** — static: the close button and `closeLabel`, and no tone gives
+  the card a live-region role. `open`: each toast's region exists (empty)
+  before it opens, danger goes assertive and the rest polite; the stack
+  appears with the first toast and goes with the last; `max` holds later
+  toasts back, unannounced, until one closes; auto-hide pauses on hover and
+  on focus; danger stays; focus after closing.
 - **Badge** — every tone on all three brand surfaces, with the contrast ratio
   computed from the browser's colours (so a failure names the tone, the
   surface, and the ratio), on top of axe.

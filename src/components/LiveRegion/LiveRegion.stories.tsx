@@ -10,7 +10,7 @@ import { Button } from "../Button/Button.js"
  * after `clearAfter` (7s by default) so a visually hidden copy does not linger
  * for the virtual cursor to find. Saying the same text twice still announces.
  *
- * Combobox, FileUpload, ReorderableList, LoadingOverlay and ToastRegion all
+ * Combobox, FileUpload, ReorderableList, LoadingOverlay and Toast all
  * announce through this.
  */
 const meta = {
