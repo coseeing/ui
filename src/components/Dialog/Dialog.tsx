@@ -59,13 +59,26 @@ export function Dialog({
         if (e.target === ref.current) onClose()
       }}
       className={cn(
-        "m-auto w-[calc(100vw-4rem)] rounded-24 border-0 bg-neutral-white p-0 shadow-[0_1.6rem_4rem_rgb(16_36_42_/_0.25)] backdrop:bg-teal-700/60 backdrop:backdrop-blur-[0.3rem]",
+        // Same shell as Card — white, rounded-24, warm-gray hairline — so a
+        // dialog reads as the surface the rest of the app uses. It keeps a
+        // shadow and backdrop because, unlike a Card, it floats.
+        "m-auto w-[calc(100vw-4rem)] overflow-hidden rounded-24 border border-bg-warm-gray bg-neutral-white p-0 shadow-[0_1.6rem_4rem_rgb(16_36_42_/_0.25)] backdrop:bg-teal-700/60 backdrop:backdrop-blur-[0.3rem]",
         size === "sm" ? "max-w-[44rem]" : "max-w-[64rem]",
         className,
       )}
     >
-      <div className="relative overflow-hidden rounded-24 p-24 tablet:p-32">
-        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-6 bg-orange-PRIMARY" />
+      {/* No orange accent bar: Card dropped it, and a dialog is the same
+          surface. Padding and type scale track Card's header.
+          Bottom padding depends on what follows: 16 before a body (the gap
+          between heading and content), but the same as the top when the
+          header is all there is above the footer — a fixed pb-16 there left
+          16px under the text against 20/24 above it, visibly bottom-heavy. */}
+      <div
+        className={cn(
+          "grid gap-4 px-20 pt-20 tablet:px-24 tablet:pt-24",
+          children ? "pb-16" : "pb-20 tablet:pb-24",
+        )}
+      >
         <div className="flex items-start justify-between gap-16">
           <h2 id={titleId} className="typography-headline4 m-0 text-teal-700">
             {title}
@@ -74,19 +87,27 @@ export function Dialog({
             type="button"
             aria-label={closeLabel}
             onClick={onClose}
-            className="flex size-32 shrink-0 cursor-pointer items-center justify-center rounded-8 border-0 bg-transparent p-0 text-teal-700 transition-colors hover:bg-bg-light-beige focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-PRIMARY"
+            className="-mr-4 flex size-32 shrink-0 cursor-pointer items-center justify-center rounded-8 border-0 bg-transparent p-0 text-teal-300 transition-colors hover:bg-bg-light-beige hover:text-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-PRIMARY"
           >
-            <PlusIcon className="rotate-45" />
+            <PlusIcon className="size-16 rotate-45" />
           </button>
         </div>
         {description ? (
-          <p className="typography-body1 mt-8 text-teal-300">{description}</p>
-        ) : null}
-        {children ? <div className="mt-16">{children}</div> : null}
-        {actions ? (
-          <div className="mt-24 flex flex-wrap justify-end gap-12">{actions}</div>
+          <p className="typography-body2 m-0 text-teal-300">{description}</p>
         ) : null}
       </div>
+
+      {children ? (
+        <div className="px-20 pb-20 tablet:px-24 tablet:pb-24">{children}</div>
+      ) : null}
+
+      {/* Flush footer bar, matching FlowForm's submitLayout="footer" — the
+          established place for a card's actions in this app. */}
+      {actions ? (
+        <div className="flex flex-wrap items-center justify-end gap-12 border-t border-bg-warm-gray bg-bg-light-off-white px-20 py-16 tablet:px-24">
+          {actions}
+        </div>
+      ) : null}
     </dialog>
   )
 }

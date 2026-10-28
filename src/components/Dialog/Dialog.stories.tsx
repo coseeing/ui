@@ -3,6 +3,8 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import { expect, fireEvent, fn, userEvent, waitFor, within } from "storybook/test"
 import { Dialog } from "./Dialog.js"
 import { Button } from "../Button/Button.js"
+import { Field, fieldDescribedBy } from "../Field/Field.js"
+import { Input } from "../Input/Input.js"
 
 /**
  * Dialog — design-system extension (not in Figma), in the brand language: the
@@ -204,5 +206,54 @@ export const Confirmation: Story = {
         />
       </>
     )
+  },
+}
+
+/** With a body: header, then content 16px below it, then the footer bar. */
+export const WithContent: Story = {
+  args: { open: true, title: "邀請成員", description: "對方會收到一封加入專案的邀請信。", size: "md" },
+  render: (args) => (
+    <Dialog
+      {...args}
+      actions={
+        <>
+          <Button variant="small" theme="greenStroke" onClick={() => {}}>
+            取消
+          </Button>
+          <Button variant="small" theme="dark" onClick={() => {}}>
+            送出邀請
+          </Button>
+        </>
+      }
+    >
+      <Field label="電子郵件" htmlFor="invite-email" hint="可以輸入多個，用逗號分隔。">
+        <Input id="invite-email" type="email" aria-describedby={fieldDescribedBy("invite-email")} />
+      </Field>
+    </Dialog>
+  ),
+}
+
+/**
+ * Padding is balanced. With no body, the space under the header's last line
+ * equals the space above the title — the header used to keep its 16px
+ * "gap before content" even with no content, leaving it bottom-heavy. With a
+ * body, the content's bottom padding matches the top too.
+ */
+export const BalancedPadding: Story = {
+  args: { open: true },
+  render: (args) => (
+    <Dialog {...args} actions={<Button variant="small" theme="dark" onClick={() => {}}>確認送出</Button>} />
+  ),
+  play: async ({ canvasElement }) => {
+    const dialog = within(canvasElement).getByRole("dialog", { name: "確認送出申請?" })
+    const box = dialog.getBoundingClientRect()
+    const title = within(dialog).getByRole("heading").getBoundingClientRect()
+    const [header, footer] = Array.from(dialog.children) as HTMLElement[]
+    const lastLine = header!.lastElementChild!.getBoundingClientRect()
+
+    const above = title.top - header!.getBoundingClientRect().top
+    const below = footer!.getBoundingClientRect().top - lastLine.bottom
+    await expect(below).toBeCloseTo(above, 0)
+    await expect(title.left - box.left).toBeCloseTo(above + 1, 0) // +1: the hairline border
   },
 }
