@@ -1,8 +1,10 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { cn } from "../../lib/cn.js"
 
-// Screen-reader announcements through a live region that is always mounted.
+// LiveRegion — design-system extension (not in Figma), and invisible: screen-
+// reader announcements through a live region that is always mounted.
 //
 // Two rules, both learned the hard way in this package:
 //
@@ -53,12 +55,17 @@ type LiveRegionProps = {
   message: Announcement | null
   /** "assertive" interrupts (role="alert") — reserve it for errors. */
   politeness?: "polite" | "assertive"
+  /** Merged after `sr-only`; override it only to show the text on purpose. */
+  className?: string
 }
 
 /** A visually hidden live region. Keep it mounted; change only `message`. */
-export function LiveRegion({ message, politeness = "polite" }: LiveRegionProps) {
+export function LiveRegion({ message, politeness = "polite", className }: LiveRegionProps) {
   return (
-    <div role={politeness === "assertive" ? "alert" : "status"} className="sr-only">
+    <div
+      role={politeness === "assertive" ? "alert" : "status"}
+      className={cn("sr-only", className)}
+    >
       {message ? <span key={message.n}>{message.text}</span> : null}
     </div>
   )

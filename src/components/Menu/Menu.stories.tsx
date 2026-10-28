@@ -58,6 +58,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+/** Open with the trigger (click, Enter, Space or ↓/↑); placement from Controls. */
 export const Playground: Story = {}
 
 const openWith = async (canvas: ReturnType<typeof within>, key: string) => {

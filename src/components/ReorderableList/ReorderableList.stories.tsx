@@ -66,6 +66,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+/** List layout: move items with 上移/下移, remove with ×; listen for the announcements. */
 export const Playground: Story = {}
 
 const ids = (items: Question[]) => items.map((q) => q.id)

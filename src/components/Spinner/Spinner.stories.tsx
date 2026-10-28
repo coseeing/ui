@@ -24,6 +24,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+/** Interactive — label, size and showLabel from Controls. */
 export const Playground: Story = {}
 
 /** All three sizes, with and without a visible label. */

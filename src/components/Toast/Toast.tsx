@@ -17,7 +17,7 @@ import {
 } from "./toastStack.js"
 
 // Toast — design-system extension (not in Figma). A dark teal card matching the
-// SiteNav band, with a small tone dot.
+// SiteNav band, with a tone icon (see ToneIcon below).
 //
 // It was a light tint fill per tone, but green-100 is a lime that sits outside
 // this palette's warm teal/orange/beige range, and a pale fill on a pale page
