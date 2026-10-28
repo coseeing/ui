@@ -427,6 +427,22 @@ three to 4.36 / 4.14 / 4.43. `orange-800: #985700` extends the Figma ramp for
 the same reason `green-800` does — `orange-700` is 3.54 on beige — and is the
 lightest step of that hue that passes everywhere (see `tokens.css`).
 
+### Overriding strings: `labels`
+
+Components with more than one user-facing string take a `labels` object;
+pass only the keys you want to change. Every component uses the same scheme:
+
+- plain keys for text that is shown — `empty`, `loading`, `choose`;
+- functions where an item's name is part of the text —
+  ``remove: (name) => `移除 ${name}` ``, ``up: (name) => `上移：${name}` ``;
+- past participles for what is announced after an action — `selected`,
+  `removed`, `created`.
+
+Composed names are functions too, so word order and punctuation are yours:
+FileUpload's ``named: (field, action) => `${field}，${action}` ``. A component
+with a single string takes it as its own prop instead, like Dialog's
+`closeLabel`.
+
 ### Pagination
 
 Two modes. With `onPageChange` it renders buttons:
@@ -508,9 +524,8 @@ const [topics, setTopics] = useState<ComboboxOption[]>([])
   promise rejects, the typed text stays so the user can retry.
 - For server-side search, pass `filter={() => true}` and update `options`
   (with `loading`) as the query changes.
-- Default strings are Traditional Chinese. Override `emptyText` and `labels`
-  (`loading`, `results`, `create`, `remove`, `selected`, and the
-  `announce*` messages); see `ComboboxLabels`.
+- Default strings are Traditional Chinese; override any of them through
+  `labels` (see `ComboboxLabels`).
 
 ### Server Components
 

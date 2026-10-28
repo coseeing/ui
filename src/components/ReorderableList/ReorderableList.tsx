@@ -33,10 +33,14 @@ import { ChevronDownIcon, PlusIcon } from "../Icons/Icons.js"
 //   item key and column, so after 上移 the focus is still on that item's 上移
 //   — now one row up.
 
+/**
+ * Same scheme as ComboboxLabels. The three buttons are icon-only, so their
+ * labels are their whole accessible names, built from the item's name.
+ */
 export type ReorderableListLabels = {
-  up: string
-  down: string
-  remove: string
+  up: (name: string) => string
+  down: (name: string) => string
+  remove: (name: string) => string
   /** Announced after a move that did not reach an end. */
   movedUp: (position: number, total: number) => string
   movedDown: (position: number, total: number) => string
@@ -51,9 +55,9 @@ export type ReorderableListLabels = {
 }
 
 const DEFAULT_LABELS: ReorderableListLabels = {
-  up: "上移",
-  down: "下移",
-  remove: "移除",
+  up: (name) => `上移：${name}`,
+  down: (name) => `下移：${name}`,
+  remove: (name) => `移除：${name}`,
   movedUp: (position, total) => `已上移，第 ${position}／${total} 項`,
   movedDown: (position, total) => `已下移，第 ${position}／${total} 項`,
   movedUpToFirst: "已上移，已抵達第一項",
@@ -233,7 +237,7 @@ export function ReorderableList<T>({
           <button
             ref={register(key, "up")}
             type="button"
-            aria-label={`${l.up}：${name}`}
+            aria-label={l.up(name)}
             aria-disabled={index === 0 || undefined}
             onClick={() => move(index, -1)}
             className={iconButtonStyles}
@@ -246,7 +250,7 @@ export function ReorderableList<T>({
           <button
             ref={register(key, "down")}
             type="button"
-            aria-label={`${l.down}：${name}`}
+            aria-label={l.down(name)}
             aria-disabled={index === items.length - 1 || undefined}
             onClick={() => move(index, 1)}
             className={iconButtonStyles}
@@ -260,7 +264,7 @@ export function ReorderableList<T>({
               <button
                 ref={register(key, "remove")}
                 type="button"
-                aria-label={`${l.remove}：${name}`}
+                aria-label={l.remove(name)}
                 onClick={() => remove(index)}
                 className={iconButtonStyles}
                 {...cellProps(key, "remove")}

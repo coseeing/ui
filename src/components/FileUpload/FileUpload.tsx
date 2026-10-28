@@ -17,10 +17,19 @@ import { PlusIcon } from "../Icons/Icons.js"
 // The trigger stays the same element in every state (選擇圖片 ↔ 重新選取), so
 // removing the file can hand focus straight back to it.
 
+/** Same scheme as ComboboxLabels: shown text, then announcements. */
 export type FileUploadLabels = {
+  /** Trigger text with no value. */
   choose: string
+  /** Trigger text with a value. */
   replace: string
+  /** Remove button text. */
   remove: string
+  /**
+   * A button's accessible name when the control is paired with a <label>:
+   * the field and the action together, e.g. 封面圖片，選擇圖片.
+   */
+  named: (field: string, action: string) => string
   /** Shown in place of a file name when there is no value. */
   empty: string
   /** Name for a value that is a URL without a usable file name. */
@@ -29,7 +38,7 @@ export type FileUploadLabels = {
   /** Announced after a file is chosen or dropped. */
   selected: (name: string) => string
   /** Announced after the file is removed. */
-  removed: string
+  removed: (name: string) => string
   /** Shown and announced when the preview image fails to load. */
   loadError: string
   /** Shown and announced when a dropped file does not match `accept`. */
@@ -41,11 +50,12 @@ const DEFAULT_LABELS: FileUploadLabels = {
   choose: "選擇圖片",
   replace: "重新選取",
   remove: "刪除圖片",
+  named: (field, action) => `${field}，${action}`,
   empty: "未設定",
   current: "目前的圖片",
   dropHint: "或將檔案拖曳到這裡",
   selected: (name) => `已選擇 ${name}`,
-  removed: "已刪除",
+  removed: (name) => `已刪除 ${name}`,
   loadError: "圖片無法載入",
   wrongType: "不支援這個檔案類型",
   previewAlt: (name) => `預覽：${name}`,
@@ -243,7 +253,7 @@ export function FileUpload({
             id={triggerId}
             type="button"
             disabled={disabled}
-            aria-label={labelText ? `${labelText}，${triggerText}` : undefined}
+            aria-label={labelText ? l.named(labelText, triggerText) : undefined}
             // The current file name (or 未設定) first: without it, after
             // choosing a file a screen reader user heard only 重新選取.
             aria-describedby={[fileId, error ? errorId : undefined, ariaDescribedBy]
@@ -260,11 +270,11 @@ export function FileUpload({
               disabled={disabled}
               // Named with the field, so two uploaders on a page do not both
               // offer an indistinguishable 刪除圖片.
-              aria-label={labelText ? `${labelText}，${l.remove}` : undefined}
+              aria-label={labelText ? l.named(labelText, l.remove) : undefined}
               onClick={() => {
                 setRejected(false)
                 onRemove()
-                say(l.removed)
+                say(l.removed(name ?? l.current))
                 // The remove button is about to unmount; the trigger is not.
                 triggerRef.current?.focus()
               }}

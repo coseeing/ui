@@ -260,3 +260,16 @@ export const LabelChangesLater: Story = {
     await expect(canvas.getByRole("button", { name: "Cover image，刪除圖片" })).toBeVisible()
   },
 }
+
+/** The field + action composition is overridable too, punctuation included. */
+export const CustomLabels: Story = {
+  args: {
+    value: PNG_DATA_URL,
+    labels: { replace: "Replace", remove: "Remove", named: (field, action) => `${action} ${field}` },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole("button", { name: "Replace 封面圖片" })).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Remove 封面圖片" })).toBeVisible()
+  },
+}

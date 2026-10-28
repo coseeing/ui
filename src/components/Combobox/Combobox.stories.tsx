@@ -91,7 +91,6 @@ const meta = {
     loading: false,
     invalid: false,
     disabled: false,
-    emptyText: "找不到符合的選項",
     placeholder: "輸入關鍵字篩選",
   },
   argTypes: {
@@ -365,7 +364,7 @@ export const MultiToggles: Story = {
 
 /**
  * The live region is mounted before anything is typed and announces the match
- * count, then `emptyText`, once typing pauses.
+ * count, then `labels.empty`, once typing pauses.
  *
  * Debounced on purpose. Updated on every keystroke, VoiceOver read stale
  * text: it speaks the typed character first, and by the time it reached the

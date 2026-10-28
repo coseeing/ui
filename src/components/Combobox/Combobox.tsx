@@ -24,9 +24,17 @@ import { ChevronDownIcon, PlusIcon } from "../Icons/Icons.js"
 export type ComboboxOption = { value: string; label: string }
 
 /** Every user-facing string, overridable to match the host app's locale. */
+/**
+ * Every user-facing string, overridable to match the host app's locale. The
+ * same scheme as FileUploadLabels and ReorderableListLabels: plain keys for
+ * shown text, functions where an item's name is part of it, past participles
+ * (selected, removed…) for what is announced after an action.
+ */
 export type ComboboxLabels = {
   /** Shown and announced while `loading`. */
   loading: string
+  /** Shown and announced when nothing matches. */
+  empty: string
   /** Announced as the filtered match count changes. */
   results: (count: number) => string
   /** The extra "create" row when `creatable`. */
@@ -34,30 +42,31 @@ export type ComboboxLabels = {
   /** Accessible name of a selected item's remove button (multi only). */
   remove: (label: string) => string
   /** Accessible name of the selected-items list (multi only). */
-  selected: string
+  selectedList: string
   /** Announced after an option is chosen. */
-  announceSelect: (label: string) => string
+  selected: (label: string) => string
   /** Announced after a selected option is chosen again (multi only). */
-  announceDeselect: (label: string) => string
+  deselected: (label: string) => string
   /** Announced after a selected item's remove button (multi only). */
-  announceRemove: (label: string) => string
+  removed: (label: string) => string
   /** Announced after `onCreate` resolves, when the caller did not select it. */
-  announceCreate: (label: string) => string
+  created: (label: string) => string
   /** Announced after `onCreate` resolves and the new option is in `value`. */
-  announceCreateSelect: (label: string) => string
+  createdAndSelected: (label: string) => string
 }
 
 const DEFAULT_LABELS: ComboboxLabels = {
   loading: "載入中",
+  empty: "找不到符合的選項",
   results: (count) => `${count} 個結果`,
   create: (label) => `新增「${label}」`,
   remove: (label) => `移除 ${label}`,
-  selected: "已選取的項目",
-  announceSelect: (label) => `已選取 ${label}`,
-  announceDeselect: (label) => `已取消選取 ${label}`,
-  announceRemove: (label) => `已移除 ${label}`,
-  announceCreate: (label) => `已新增「${label}」`,
-  announceCreateSelect: (label) => `已新增並選取「${label}」`,
+  selectedList: "已選取的項目",
+  selected: (label) => `已選取 ${label}`,
+  deselected: (label) => `已取消選取 ${label}`,
+  removed: (label) => `已移除 ${label}`,
+  created: (label) => `已新增「${label}」`,
+  createdAndSelected: (label) => `已新增並選取「${label}」`,
 }
 
 /**
@@ -109,8 +118,8 @@ function useCreatedNotice(
     if (!created) return
     say(
       isPicked(created.label)
-        ? l.announceCreateSelect(created.label)
-        : l.announceCreate(created.label),
+        ? l.createdAndSelected(created.label)
+        : l.created(created.label),
     )
     setCreated(null)
     // Keyed on `created` alone: one check per creation, against the render
@@ -133,8 +142,6 @@ type SharedProps = {
    */
   onCreate?: (label: string) => Promise<void> | void
   loading?: boolean
-  /** Shown and announced when nothing matches. */
-  emptyText?: string
   labels?: Partial<ComboboxLabels>
   /**
    * Match rule; defaults to a case-insensitive substring match on `label`.
@@ -204,7 +211,6 @@ function ComboboxBase({
   creatable,
   onCreate,
   loading,
-  emptyText = "找不到符合的選項",
   labels,
   filter = defaultFilter,
   invalid,
@@ -374,7 +380,7 @@ function ComboboxBase({
     status = loading
       ? l.loading
       : matches.length === 0
-        ? emptyText
+        ? l.empty
         : l.results(matches.length)
   }
   const message = open && (loading || matches.length === 0) ? status : ""
@@ -566,7 +572,7 @@ export function Combobox({ value, onChange, ...props }: ComboboxProps) {
       onSelect={(o) => {
         onChange(o)
         reset()
-        announcer.notice(l.announceSelect(o.label))
+        announcer.notice(l.selected(o.label))
       }}
       onCreated={(label) => {
         reset()
@@ -626,13 +632,13 @@ export function MultiCombobox({
   const remove = (index: number) => {
     pendingFocus.current = value[index + 1]?.value ?? null
     onChange(value.filter((_, i) => i !== index))
-    announcer.notice(l.announceRemove(value[index]!.label))
+    announcer.notice(l.removed(value[index]!.label))
   }
 
   return (
     <div className={cn("grid w-full gap-8", className)}>
       {value.length > 0 ? (
-        <ul aria-label={l.selected} className="m-0 flex list-none flex-wrap gap-8 p-0">
+        <ul aria-label={l.selectedList} className="m-0 flex list-none flex-wrap gap-8 p-0">
           {value.map((option, i) => (
             <li
               key={option.value}
@@ -670,7 +676,7 @@ export function MultiCombobox({
           const was = selected.has(o.value)
           onChange(was ? value.filter((v) => v.value !== o.value) : [...value, o])
           setQuery("")
-          announcer.notice(was ? l.announceDeselect(o.label) : l.announceSelect(o.label))
+          announcer.notice(was ? l.deselected(o.label) : l.selected(o.label))
         }}
         onCreated={(label) => {
           setQuery("")

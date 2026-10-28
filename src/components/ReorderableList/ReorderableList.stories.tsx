@@ -269,3 +269,22 @@ const typeChecks = () => [
   <ReorderableList items={QUESTIONS} getKey={(q) => q.id} getLabel={(q) => q.title} onChange={() => {}} />,
 ]
 void typeChecks
+
+/** Every string is overridable, including the composed button names. */
+export const CustomLabels: Story = {
+  render: () => (
+    <ReorderableList
+      label="FAQ order"
+      items={QUESTIONS.slice(0, 2)}
+      getKey={(q) => q.id}
+      getLabel={(q) => q.title}
+      onChange={() => {}}
+      labels={{ up: (n) => `Move ${n} up`, down: (n) => `Move ${n} down`, remove: (n) => `Remove ${n}` }}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole("button", { name: "Move WCAG 2.2 新增了哪些準則 up" })).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Remove 螢幕閱讀器如何朗讀表格" })).toBeVisible()
+  },
+}
