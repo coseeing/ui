@@ -387,6 +387,10 @@ const [saved, setSaved] = useState(false)
   text clears after 7s so it does not linger beside the card. Keep the
   component mounted and toggle `open` — don't render it conditionally, or its
   region is created at the same moment as its text.
+- The tone is not shown by colour alone: each has its own icon shape (circle-i,
+  circle-✓, triangle-!, octagon-!), and its name is spoken before the title —
+  visually hidden on the card and part of the announcement: 「錯誤：儲存失敗，
+  請檢查網路連線後再試一次。」. Override the names with `toneLabels`.
 - Danger toasts stay until closed unless given an `autoHide`; an error should
   not vanish unread.
 - Timers pause while the pointer is over the stack or focus is inside it.

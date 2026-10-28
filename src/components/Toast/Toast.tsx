@@ -43,12 +43,77 @@ import {
 export type ToastTone = "info" | "success" | "warning" | "danger"
 export type { ToastPosition }
 
-// Mid-ramp steps, chosen to stay legible against teal-PRIMARY.
-const TONE_DOT: Record<ToastTone, string> = {
-  info: "bg-blue-300",
-  success: "bg-green-300",
-  warning: "bg-orange-PRIMARY",
-  danger: "bg-red-300",
+// The tone is never carried by colour alone (WCAG 1.4.1). It was a coloured
+// dot, which told colour-blind users nothing and screen reader users less.
+// Now each tone has its own icon *shape* — circle-i, circle-check,
+// triangle-!, octagon-! — and its name is spoken: a visually hidden prefix
+// on the card (錯誤：儲存失敗) and the same prefix in the announcement.
+// Danger is an octagon, not an ×, which the close button already is.
+
+/** Spoken before the title; overridable through `toneLabels`. */
+const DEFAULT_TONE_LABELS: Record<ToastTone, string> = {
+  info: "提示",
+  success: "成功",
+  warning: "警告",
+  danger: "錯誤",
+}
+
+// Mid-ramp steps, chosen to stay legible against teal-PRIMARY (≥3.7:1).
+const TONE_COLOUR: Record<ToastTone, string> = {
+  info: "text-blue-300",
+  success: "text-green-300",
+  warning: "text-orange-PRIMARY",
+  danger: "text-red-300",
+}
+
+/** The tone's shape, filled in its colour, glyph cut out in the card teal. */
+function ToneIcon({ tone }: { tone: ToastTone }) {
+  const glyph = "fill-teal-PRIMARY"
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      aria-hidden="true"
+      data-tone-icon={tone}
+      className={cn("mt-2 size-20 shrink-0", TONE_COLOUR[tone])}
+    >
+      {tone === "warning" ? (
+        <path
+          d="M10 2 18.5 17.5H1.5Z"
+          fill="currentColor"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinejoin="round"
+        />
+      ) : tone === "danger" ? (
+        <polygon
+          points="6.3,1 13.7,1 19,6.3 19,13.7 13.7,19 6.3,19 1,13.7 1,6.3"
+          fill="currentColor"
+        />
+      ) : (
+        <circle cx="10" cy="10" r="9" fill="currentColor" />
+      )}
+      {tone === "info" ? (
+        <>
+          <circle cx="10" cy="5.8" r="1.25" className={glyph} />
+          <rect x="9" y="8.5" width="2" height="6" rx="1" className={glyph} />
+        </>
+      ) : tone === "success" ? (
+        <path
+          d="M6 10.5 8.75 13.25 14 7.75"
+          fill="none"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="stroke-teal-PRIMARY"
+        />
+      ) : (
+        <>
+          <rect x="9" y={tone === "warning" ? 7 : 5} width="2" height="5.5" rx="1" className={glyph} />
+          <circle cx="10" cy={tone === "warning" ? 14.75 : 14} r="1.2" className={glyph} />
+        </>
+      )}
+    </svg>
+  )
 }
 
 const DEFAULT_AUTO_HIDE = 5000
@@ -75,6 +140,8 @@ type ToastProps = {
   onClose?: () => void
   /** Accessible name for the close button. */
   closeLabel?: string
+  /** The spoken tone names (提示／成功／警告／錯誤). */
+  toneLabels?: Partial<Record<ToastTone, string>>
   /**
    * Managed mode: ms before `onClose` is called; `null` = until closed.
    * Defaults to 5000, except danger, which stays — an error should not vanish
@@ -106,8 +173,10 @@ function ToastCard({
   message,
   onClose,
   closeLabel = "關閉通知",
+  toneLabels,
   className,
 }: ToastProps) {
+  const toneLabel = { ...DEFAULT_TONE_LABELS, ...toneLabels }[tone]
   return (
     <div
       className={cn(
@@ -116,12 +185,12 @@ function ToastCard({
         className,
       )}
     >
-      <span
-        aria-hidden="true"
-        className={cn("mt-6 size-8 shrink-0 rounded-full", TONE_DOT[tone])}
-      />
+      <ToneIcon tone={tone} />
       <div className="min-w-0 flex-1">
-        <p className="typography-strong1 m-0 text-bg-light-off-white">{title}</p>
+        <p className="typography-strong1 m-0 text-bg-light-off-white">
+          <span className="sr-only">{toneLabel}：</span>
+          {title}
+        </p>
         {message ? (
           <p className="typography-body2 m-0 mt-4 text-bg-light-off-white/75">
             {message}
@@ -189,9 +258,11 @@ function ManagedToast({
     }
     if (visible && !announced.current) {
       announced.current = true
-      say(message ? `${title}，${message}` : title)
+      const toneLabel = { ...DEFAULT_TONE_LABELS, ...card.toneLabels }[tone]
+      say(`${toneLabel}：${title}${message ? `，${message}` : ""}`)
     }
-  }, [open, visible, title, message, say])
+    // toneLabels is read, not watched: it only matters at the moment of saying.
+  }, [open, visible, title, message, tone, say])
 
   // Auto-hide, counting only time spent visible and not paused.
   const remaining = useRef<number | null>(null)

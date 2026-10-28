@@ -64,6 +64,27 @@ export const TopCentre: Story = {
   ),
 }
 
+/**
+ * The tone is not carried by colour alone (WCAG 1.4.1): every tone has its
+ * own icon shape, and its name is spoken before the title — visually hidden
+ * on the card, and part of the announcement in managed mode.
+ */
+export const ToneNotByColourAlone: Story = {
+  parameters: { layout: "padded" },
+  render: Tones.render,
+  play: async ({ canvasElement }) => {
+    const icons = Array.from(canvasElement.querySelectorAll<SVGElement>("[data-tone-icon]"))
+    const shapes = icons.map((icon) => `${icon.dataset.toneIcon}:${icon.firstElementChild!.tagName}`)
+    await expect(shapes).toEqual(["info:circle", "success:circle", "warning:path", "danger:polygon"])
+    // Circle-i and circle-check share an outline, so their glyphs must differ.
+    await expect(icons[0]!.querySelector("rect")).not.toBeNull()
+    await expect(icons[1]!.querySelector("rect")).toBeNull()
+
+    const prefixes = Array.from(canvasElement.querySelectorAll(".sr-only")).map((n) => n.textContent)
+    await expect(prefixes).toEqual(["提示：", "成功：", "警告：", "錯誤："])
+  },
+}
+
 /** `onClose` adds a close button; `closeLabel` names it. */
 export const WithCloseButton: Story = {
   args: { onClose: fn(), closeLabel: "關閉這則通知" },
@@ -174,12 +195,12 @@ export const ManagedAnnouncements: Story = {
     await expect(stack()).toBeNull()
 
     await press(canvas, "已儲存")
-    await expect(regionTexts(canvas, "status")).toContain("已儲存，你的變更已儲存。")
+    await expect(regionTexts(canvas, "status")).toContain("成功：已儲存，你的變更已儲存。")
     await expect(within(stack()!).queryByRole("status")).toBeNull()
     await expect(within(stack()!).queryByRole("alert")).toBeNull()
 
     await press(canvas, "儲存失敗")
-    await expect(regionTexts(canvas, "alert")).toEqual(["儲存失敗，請檢查網路連線後再試一次。"])
+    await expect(regionTexts(canvas, "alert")).toEqual(["錯誤：儲存失敗，請檢查網路連線後再試一次。"])
 
     for (const button of closeButtons()) await userEvent.click(button)
     await waitFor(() => expect(stack()).toBeNull())
@@ -197,11 +218,11 @@ export const ManagedMax: Story = {
     await press(canvas, "連線即將逾時")
     await expect(closeButtons()).toHaveLength(2)
     // Held back, so not announced yet.
-    await expect(regionTexts(canvas, "status")).not.toContain("連線即將逾時")
+    await expect(regionTexts(canvas, "status")).not.toContain("警告：連線即將逾時")
 
     await userEvent.click(closeButtons()[0]!)
     await waitFor(() => expect(closeButtons()).toHaveLength(2))
-    await expect(regionTexts(canvas, "status")).toContain("連線即將逾時")
+    await expect(regionTexts(canvas, "status")).toContain("警告：連線即將逾時")
   },
 }
 
