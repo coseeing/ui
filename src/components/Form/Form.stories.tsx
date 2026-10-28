@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { useState } from "react"
-import { expect, userEvent, within } from "storybook/test"
+import { expect, userEvent, waitFor, within } from "storybook/test"
 import { Input } from "../Input/Input.js"
 import { Select } from "../Select/Select.js"
 import { Checkbox } from "../Checkbox/Checkbox.js"
@@ -44,10 +44,15 @@ export const InvalidInput: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await expect(canvas.getByLabelText("Email")).toHaveAttribute(
-      "aria-invalid",
-      "true",
-    )
+    const email = canvas.getByLabelText("Email")
+    await expect(email).toHaveAttribute("aria-invalid", "true")
+
+    // Focused, an invalid field keeps saying so: its outline is red-600
+    // (6.13:1 on white), not the usual teal.
+    email.focus()
+    // waitFor: transition-colors animates outline-color too (150ms).
+    await waitFor(() => expect(getComputedStyle(email).outlineColor).toBe("rgb(173, 58, 48)"))
+    await expect(getComputedStyle(email).outlineStyle).toBe("solid")
 
     // The message sits inside Field's always-mounted aria-live region. That
     // region has to exist before the error appears, so mounting a

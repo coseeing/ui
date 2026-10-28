@@ -1,19 +1,14 @@
 import { cn } from "../../lib/cn.js"
+import { inputStyles, invalidStyles } from "../Input/Input.js"
 
-// Textarea — NOT in Figma; SSO gap-fill on brand tokens. The same shell as
-// Input (rounded-8, warm-gray border, white field, teal text, orange focus
-// ring), so a form mixing the two reads as one set. Keep the two in sync.
+// Textarea — NOT in Figma; SSO gap-fill on brand tokens. Input's shell (shared,
+// not copied), so a form mixing the two reads as one set.
 //
 // `autoResize` is CSS `field-sizing: content`, not script, so this stays a
 // hook-free Server Component. Chromium and Safari grow the field with its
 // content; browsers without support (Firefox, at the time of writing) keep
 // the fixed `rows` height and the manual resize handle, which is the same
 // field without the convenience.
-const textareaStyles =
-  "typography-body1 block w-full rounded-8 border border-bg-warm-gray bg-neutral-white px-16 py-8 text-teal-700 transition-colors placeholder:text-neutral-dark-gray hover:border-teal-100 focus:border-teal-PRIMARY focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-teal-PRIMARY"
-
-const invalidStyles =
-  "border-red-PRIMARY focus:border-red-PRIMARY focus-visible:ring-red-PRIMARY"
 
 type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
   invalid?: boolean
@@ -34,7 +29,7 @@ export function Textarea({
       rows={rows}
       aria-invalid={invalid || undefined}
       className={cn(
-        textareaStyles,
+        inputStyles,
         autoResize ? "field-sizing-content resize-none" : "resize-y",
         invalid && invalidStyles,
         className,

@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react"
 import { LiveRegion, useAnnouncer } from "../LiveRegion/LiveRegion.js"
 import { cn } from "../../lib/cn.js"
+import { buttonClasses } from "../Button/Button.js"
 import { PlusIcon } from "../Icons/Icons.js"
 
 // FileUpload — design-system extension (not in Figma). A preview tile beside
@@ -96,8 +97,9 @@ type FileUploadProps = {
   className?: string
 }
 
-const buttonStyles =
-  "typography-strong2 inline-flex cursor-pointer items-center justify-center gap-4 rounded-8 border-0 bg-transparent px-16 py-8 text-teal-PRIMARY ring-1 ring-inset ring-teal-PRIMARY transition-colors hover:bg-neutral-beige-gray focus-visible:bg-neutral-beige-gray disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-teal-PRIMARY"
+// Small GreenStroke Buttons — Button's own classes, not a copy, so they stay
+// in step with every other button.
+const buttonStyles = cn(buttonClasses("small", "greenStroke"), "cursor-pointer border-0")
 
 /** The display name of a value: a File's own name, or a URL's last segment. */
 function nameOf(value: File | string): string | undefined {
@@ -337,7 +339,8 @@ export function FileUpload({
               .filter(Boolean)
               .join(" ")}
             onClick={openPicker}
-            className={buttonStyles}
+            // Invalid: the focus outline turns red, as on Input.
+            className={cn(buttonStyles, invalid && "focus-visible:outline-red-600")}
           >
             <span id={triggerTextId}>{triggerText}</span>
           </button>

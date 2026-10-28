@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { LiveRegion, useAnnouncer } from "../LiveRegion/LiveRegion.js"
 import { cn } from "../../lib/cn.js"
+import { inputStyles, invalidStyles } from "../Input/Input.js"
 import { ChevronDownIcon, PlusIcon } from "../Icons/Icons.js"
 
 // Combobox / MultiCombobox — design-system extension (not in Figma). A text
@@ -176,11 +177,6 @@ export type MultiComboboxProps = SharedProps & {
   onChange: (value: ComboboxOption[]) => void
 }
 
-const inputStyles =
-  "typography-body1 block w-full rounded-8 border border-bg-warm-gray bg-neutral-white py-8 pl-16 pr-40 text-teal-700 transition-colors placeholder:text-neutral-dark-gray hover:border-teal-100 focus:border-teal-PRIMARY focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-teal-PRIMARY"
-
-const invalidStyles =
-  "border-red-PRIMARY focus:border-red-PRIMARY focus-visible:ring-red-PRIMARY"
 
 /** Quiet period before the result count is announced, in ms. */
 const ANNOUNCE_DELAY = 500
@@ -461,7 +457,7 @@ function ComboboxBase({
           composingRef.current = false
           setComposing(false)
         }}
-        className={cn(inputStyles, invalid && invalidStyles)}
+        className={cn(inputStyles, "pr-40", invalid && invalidStyles)}
       />
       <ChevronDownIcon
         className={cn(

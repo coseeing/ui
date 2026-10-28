@@ -1,8 +1,9 @@
 import { cn } from "../../lib/cn.js"
+import { inputStyles, invalidStyles } from "../Input/Input.js"
 import { ChevronDownIcon } from "../Icons/Icons.js"
 
-// Select — NOT in Figma; SSO gap-fill on brand tokens. Matches the Input shell,
-// plus a chevron affordance so it reads as a dropdown rather than a text input
+// Select — NOT in Figma; SSO gap-fill on brand tokens. Input's shell (shared,
+// not copied), plus a chevron affordance so it reads as a dropdown rather than a text input
 // (the native arrow is suppressed by appearance-none).
 type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
   invalid?: boolean
@@ -14,8 +15,9 @@ export function Select({ className, invalid, children, ...props }: SelectProps) 
       <select
         aria-invalid={invalid || undefined}
         className={cn(
-          "typography-body1 block w-full appearance-none rounded-8 border border-bg-warm-gray bg-neutral-white py-8 pl-16 pr-40 text-teal-700 transition-colors hover:border-teal-100 focus:border-teal-PRIMARY focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-teal-PRIMARY",
-          invalid && "border-red-PRIMARY focus:border-red-PRIMARY focus-visible:ring-red-PRIMARY",
+          inputStyles,
+          "appearance-none pr-40",
+          invalid && invalidStyles,
           className,
         )}
         {...props}

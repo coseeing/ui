@@ -752,6 +752,11 @@ on — the old orange ring was 1.6–2.0:1 on the brand's light surfaces):
   the surfaces; the gap keeps it distinct from teal fills and teal input
   borders. `outline-solid` is needed because `outline-hidden` elsewhere on the
   element sets the style to none.
+- **On an invalid field** (`invalid`): the outline turns `red-600` — 6.13:1
+  on white, 5.69 on off-white, 4.95 on beige — so the error is still visible
+  while the field has focus. Input, Textarea, Select and Combobox share one
+  input shell (`inputStyles`/`invalidStyles` in `Input.tsx`), so this holds
+  for all of them; FileUpload's trigger follows suit.
 - **On teal surfaces, or inset in a filled button**: `orange-PRIMARY`, 5.5–6.3:1
   on teal. Filled Buttons draw their ring inset, measured against their own
   fill, so they work on any page surface.
