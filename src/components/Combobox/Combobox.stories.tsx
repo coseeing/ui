@@ -199,6 +199,11 @@ export const KeyboardNavigation: Story = {
     await expect(activeLabel()).toBe("WCAG") // wraps
     await userEvent.keyboard("{ArrowUp}")
     await expect(activeLabel()).toBe("語音辨識") // wraps back
+
+    // The highlight is a teal-PRIMARY bar (10.5:1 on its beige fill); the
+    // fill alone is 1.24:1 against the white popup and would fail 1.4.11.
+    const active = document.getElementById(input.getAttribute("aria-activedescendant")!)!
+    await expect(getComputedStyle(active).boxShadow).toContain("rgb(31, 65, 71)")
     await userEvent.keyboard("{Escape}")
 
     await userEvent.keyboard("ar")

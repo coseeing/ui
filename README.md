@@ -687,6 +687,13 @@ were added with a story that renders every tone on every surface.
 building the static Storybook. That is expected: Storybook bundles an SPA where
 the directive is meaningless. It still matters in `dist/`, which is not bundled.
 
+Focus styles use `outline-hidden`, never `outline-none`. In Tailwind v4,
+`outline-none` sets `outline-style: none`, and every focus indicator here is a
+ring or box-shadow — which Windows High Contrast (forced colors) removes, so
+focus vanished entirely there. `outline-hidden` is a transparent outline that
+forced-colors mode paints. Anything marked without DOM focus (the combobox's
+highlighted option) also needs a `forced-colors:outline-*`.
+
 Relative imports in `src/` carry explicit `.js` extensions. That is what makes
 the `bundle: false` output valid Node ESM; TypeScript resolves them back to the
 `.ts`/`.tsx` sources.

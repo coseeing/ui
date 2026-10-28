@@ -2,7 +2,7 @@ import { cn } from "../../lib/cn.js"
 import { Link, type AnchorLike } from "../Link/Link.js"
 
 const baseStyles =
-  "typography-strong1 inline-flex items-center justify-center transition-colors duration-200 focus:outline-none focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+  "typography-strong1 inline-flex items-center justify-center transition-colors duration-200 focus:outline-hidden focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50"
 
 // Sourced from Figma "Brand" → Elements. States Default/Hover/Focused map to
 // default / hover: / focus-visible:. Buttons are flat (no shadow) per the design.

@@ -121,7 +121,7 @@ function ToastCard({
           data-toast-close=""
           aria-label={closeLabel}
           onClick={onClose}
-          className="-my-4 flex size-32 shrink-0 cursor-pointer items-center justify-center rounded-8 border-0 bg-transparent p-0 text-bg-light-off-white transition-colors hover:bg-teal-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-PRIMARY"
+          className="-my-4 flex size-32 shrink-0 cursor-pointer items-center justify-center rounded-8 border-0 bg-transparent p-0 text-bg-light-off-white transition-colors hover:bg-teal-500 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-orange-PRIMARY"
         >
           <PlusIcon className="size-20 rotate-45" />
         </button>

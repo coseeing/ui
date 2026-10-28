@@ -118,6 +118,9 @@ export const Navigation: Story = {
 
     await userEvent.keyboard("{ArrowUp}")
     await expect(item("刪除活動")).toHaveFocus() // wraps
+    // Focus is marked by a teal-PRIMARY bar (10.5:1 on the beige fill), not
+    // by the fill alone (1.24:1).
+    await expect(getComputedStyle(item("刪除活動")).boxShadow).toContain("rgb(31, 65, 71)")
     await userEvent.keyboard("{ArrowDown}")
     await expect(item("編輯活動")).toHaveFocus() // wraps back
     await userEvent.keyboard("{ArrowDown}{ArrowDown}")

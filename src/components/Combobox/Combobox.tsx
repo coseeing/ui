@@ -161,7 +161,7 @@ export type MultiComboboxProps = SharedProps & {
 }
 
 const inputStyles =
-  "typography-body1 block w-full rounded-8 border border-bg-warm-gray bg-neutral-white py-8 pl-16 pr-40 text-teal-700 transition-colors placeholder:text-neutral-dark-gray hover:border-teal-100 focus:border-teal-PRIMARY focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-PRIMARY focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-white disabled:cursor-not-allowed disabled:opacity-50"
+  "typography-body1 block w-full rounded-8 border border-bg-warm-gray bg-neutral-white py-8 pl-16 pr-40 text-teal-700 transition-colors placeholder:text-neutral-dark-gray hover:border-teal-100 focus:border-teal-PRIMARY focus:outline-hidden focus-visible:ring-2 focus-visible:ring-orange-PRIMARY focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-white disabled:cursor-not-allowed disabled:opacity-50"
 
 const invalidStyles =
   "border-red-PRIMARY focus:border-red-PRIMARY focus-visible:ring-red-PRIMARY"
@@ -477,7 +477,12 @@ function ComboboxBase({
                   "flex cursor-pointer items-center gap-8 px-16 py-8 text-teal-700 hover:bg-bg-light-off-white",
                   selected ? "typography-strong1" : "typography-body1",
                   i === activeIndex &&
-                    "bg-bg-light-beige shadow-[inset_0.3rem_0_0_var(--color-orange-PRIMARY)] hover:bg-bg-light-beige",
+                    // teal-PRIMARY bar: 10.5:1 on beige, so the highlight
+                    // clears 3:1 (WCAG 1.4.11) without relying on the fill
+                    // (1.24:1). Forced colors drops shadows and fills, so the
+                    // option also gets a real outline there — it never holds
+                    // DOM focus, so nothing else would mark it.
+                    "bg-bg-light-beige shadow-[inset_0.4rem_0_0_var(--color-teal-PRIMARY)] hover:bg-bg-light-beige forced-colors:outline-2 forced-colors:-outline-offset-2 forced-colors:outline-solid",
                 )}
               >
                 {row.kind === "create" ? (
@@ -637,7 +642,7 @@ export function MultiCombobox({
                 aria-label={l.remove(option.label)}
                 disabled={disabled}
                 onClick={() => remove(i)}
-                className="flex size-24 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-teal-700 transition-colors hover:bg-orange-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-PRIMARY disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex size-24 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-teal-700 transition-colors hover:bg-orange-200 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-orange-PRIMARY disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <PlusIcon className="size-16 rotate-45" />
               </button>

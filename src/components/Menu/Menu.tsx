@@ -58,8 +58,12 @@ type MenuProps = {
   className?: string
 }
 
+// Focused item: beige fill plus a teal-PRIMARY bar (10.5:1 on beige; the fill
+// alone is 1.24:1, so the bar is what meets WCAG 1.4.11). `outline-hidden`,
+// not `outline-none`: it is a transparent outline, which forced-colors mode
+// paints, so the item stays visibly focused when shadows and fills are gone.
 const itemStyles =
-  "typography-body1 flex w-full cursor-pointer items-center gap-8 border-0 bg-transparent px-16 py-8 text-left no-underline transition-colors hover:bg-bg-light-off-white focus:bg-bg-light-beige focus:shadow-[inset_0.3rem_0_0_var(--color-orange-PRIMARY)] focus:outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:bg-transparent"
+  "typography-body1 flex w-full cursor-pointer items-center gap-8 border-0 bg-transparent px-16 py-8 text-left no-underline transition-colors hover:bg-bg-light-off-white focus:bg-bg-light-beige focus:shadow-[inset_0.4rem_0_0_var(--color-teal-PRIMARY)] focus:outline-hidden aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:bg-transparent"
 
 /** Gap kept between the popup and the viewport edge, in px. */
 const VIEWPORT_MARGIN = 8

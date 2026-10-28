@@ -88,7 +88,7 @@ type ReorderableListProps<T> = {
 }
 
 const iconButtonStyles =
-  "flex size-32 shrink-0 cursor-pointer items-center justify-center rounded-8 border-0 bg-transparent p-0 text-teal-700 transition-colors hover:bg-bg-light-beige focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-PRIMARY aria-disabled:cursor-not-allowed aria-disabled:opacity-40 aria-disabled:hover:bg-transparent"
+  "flex size-32 shrink-0 cursor-pointer items-center justify-center rounded-8 border-0 bg-transparent p-0 text-teal-700 transition-colors hover:bg-bg-light-beige focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-orange-PRIMARY aria-disabled:cursor-not-allowed aria-disabled:opacity-40 aria-disabled:hover:bg-transparent"
 
 export function ReorderableList<T>({
   items,
@@ -282,7 +282,7 @@ export function ReorderableList<T>({
         <p
           ref={emptyRef}
           tabIndex={-1}
-          className="typography-body2 m-0 rounded-8 py-12 text-neutral-dark-gray focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-PRIMARY"
+          className="typography-body2 m-0 rounded-8 py-12 text-neutral-dark-gray focus:outline-hidden focus-visible:ring-2 focus-visible:ring-orange-PRIMARY"
         >
           {l.empty}
         </p>
@@ -303,7 +303,7 @@ export function ReorderableList<T>({
                     role="gridcell"
                     className={cn(
                       labelStyles,
-                      "rounded-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-PRIMARY",
+                      "rounded-8 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-orange-PRIMARY",
                     )}
                     {...cellProps(key, "label")}
                   >

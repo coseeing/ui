@@ -25,7 +25,7 @@ export function Checkbox({
       type="checkbox"
       aria-invalid={invalid || undefined}
       className={cn(
-        "size-16 shrink-0 rounded-[0.4rem] border border-bg-warm-gray bg-neutral-white text-teal-PRIMARY accent-teal-PRIMARY transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-PRIMARY focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+        "size-16 shrink-0 rounded-[0.4rem] border border-bg-warm-gray bg-neutral-white text-teal-PRIMARY accent-teal-PRIMARY transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-orange-PRIMARY focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
         invalid && "border-red-PRIMARY",
         className,
       )}

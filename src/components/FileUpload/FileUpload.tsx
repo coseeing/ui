@@ -71,7 +71,7 @@ type FileUploadProps = {
 }
 
 const buttonStyles =
-  "typography-strong2 inline-flex cursor-pointer items-center justify-center gap-4 rounded-8 border-0 bg-transparent px-16 py-8 text-teal-PRIMARY ring-1 ring-inset ring-teal-PRIMARY transition-colors hover:bg-neutral-beige-gray focus-visible:bg-neutral-beige-gray focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-PRIMARY disabled:cursor-not-allowed disabled:opacity-50"
+  "typography-strong2 inline-flex cursor-pointer items-center justify-center gap-4 rounded-8 border-0 bg-transparent px-16 py-8 text-teal-PRIMARY ring-1 ring-inset ring-teal-PRIMARY transition-colors hover:bg-neutral-beige-gray focus-visible:bg-neutral-beige-gray focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-orange-PRIMARY disabled:cursor-not-allowed disabled:opacity-50"
 
 /** The display name of a value: a File's own name, or a URL's last segment. */
 function nameOf(value: File | string): string | undefined {
