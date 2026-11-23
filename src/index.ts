@@ -20,18 +20,36 @@ export { Card } from "./components/Card/Card.js"
 export { Button } from "./components/Button/Button.js"
 export { Link } from "./components/Link/Link.js"
 export type { LinkProps, AnchorLike } from "./components/Link/Link.js"
+export { Menu } from "./components/Menu/Menu.js"
+export type { MenuItem, MenuTrigger } from "./components/Menu/Menu.js"
+export { Pagination } from "./components/Pagination/Pagination.js"
+export type { PaginationLabels } from "./components/Pagination/Pagination.js"
 
 // ── Form primitives ─────────────────────────────────────────────────────────
-export { Field, Label, ValidationMessage } from "./components/Field/Field.js"
+export { Field, Label, ValidationMessage, fieldDescribedBy } from "./components/Field/Field.js"
 export { Input } from "./components/Input/Input.js"
+export { Textarea } from "./components/Textarea/Textarea.js"
 export { Checkbox } from "./components/Checkbox/Checkbox.js"
 export { Select } from "./components/Select/Select.js"
+export { FileUpload } from "./components/FileUpload/FileUpload.js"
+export type { FileUploadLabels } from "./components/FileUpload/FileUpload.js"
+export { Combobox, MultiCombobox } from "./components/Combobox/Combobox.js"
+export type {
+  ComboboxOption,
+  ComboboxLabels,
+  ComboboxProps,
+  MultiComboboxProps,
+} from "./components/Combobox/Combobox.js"
 
 // ── Data display ────────────────────────────────────────────────────────────
 export { Badge } from "./components/Badge/Badge.js"
 export { Tag } from "./components/Tag/Tag.js"
 export { Table } from "./components/Table/Table.js"
 export type { TableColumn } from "./components/Table/Table.js"
+export { DescriptionList } from "./components/DescriptionList/DescriptionList.js"
+export type { DescriptionItem } from "./components/DescriptionList/DescriptionList.js"
+export { ReorderableList } from "./components/ReorderableList/ReorderableList.js"
+export type { ReorderableListLabels } from "./components/ReorderableList/ReorderableList.js"
 
 // ── Disclosure & feedback ───────────────────────────────────────────────────
 export { Accordion } from "./components/Accordion/Accordion.js"
@@ -40,6 +58,11 @@ export { Tabs } from "./components/Tabs/Tabs.js"
 export type { TabItem } from "./components/Tabs/Tabs.js"
 export { Dialog } from "./components/Dialog/Dialog.js"
 export { Toast } from "./components/Toast/Toast.js"
+export type { ToastTone, ToastPosition } from "./components/Toast/Toast.js"
+export { LiveRegion, useAnnouncer } from "./components/LiveRegion/LiveRegion.js"
+export type { Announcement } from "./components/LiveRegion/LiveRegion.js"
+export { Spinner } from "./components/Spinner/Spinner.js"
+export { LoadingOverlay } from "./components/LoadingOverlay/LoadingOverlay.js"
 
 // ── Icons ───────────────────────────────────────────────────────────────────
 export * from "./components/Icons/Icons.js"

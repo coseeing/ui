@@ -2,10 +2,20 @@ import { cn } from "../../lib/cn.js"
 import { Link, type AnchorLike } from "../Link/Link.js"
 
 const baseStyles =
-  "typography-strong1 inline-flex items-center justify-center transition-colors duration-200 focus:outline-none focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+  "typography-strong1 inline-flex items-center justify-center transition-colors duration-200 focus:outline-hidden focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50"
 
 // Sourced from Figma "Brand" → Elements. States Default/Hover/Focused map to
 // default / hover: / focus-visible:. Buttons are flat (no shadow) per the design.
+//
+// Focus indicators (WCAG 1.4.11, 3:1 against what they sit on):
+// - Filled buttons draw an INSET ring, measured against their own focus
+//   fill, so it holds on any page surface, light or dark: orange on the
+//   teal fills 6.34, orange on danger's red-700 4.06, teal on primary-light's
+//   orange-500 4.35.
+// - greenStroke is transparent, so its indicator is the package-wide one: a
+//   teal-PRIMARY outline 2px outside the button (6.57:1 on its hover fill,
+//   8.9–11 on the brand surfaces). It used to swap its teal stroke for an
+//   orange ring — 1.19:1 on that fill, less visible focused than not.
 const variantStyles = {
   primary: {
     base: "rounded-[62px] px-36 py-12",
@@ -19,12 +29,12 @@ const variantStyles = {
     base: "rounded-8 px-16 py-8",
     // Small Button - Light: teal fill, off-white label, warm-gray hairline border.
     light:
-      "bg-teal-PRIMARY text-bg-light-off-white ring-1 ring-inset ring-bg-warm-gray hover:bg-teal-500 focus-visible:bg-teal-500 focus-visible:ring-2 focus-visible:ring-orange-PRIMARY",
+      "bg-teal-PRIMARY text-bg-light-off-white ring-1 ring-inset ring-bg-warm-gray hover:bg-teal-500 focus-visible:bg-teal-500 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-PRIMARY",
     // Small Button - Dark: teal fill, off-white label, no border.
     dark: "bg-teal-PRIMARY text-bg-light-off-white hover:bg-teal-500 focus-visible:bg-teal-500 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-PRIMARY",
     // Small Button - GreenStroke: transparent, teal label + teal stroke, neutral hover fill.
     greenStroke:
-      "bg-transparent text-teal-PRIMARY ring-1 ring-inset ring-teal-PRIMARY hover:bg-neutral-beige-gray focus-visible:bg-neutral-beige-gray focus-visible:ring-2 focus-visible:ring-orange-PRIMARY",
+      "bg-transparent text-teal-PRIMARY ring-1 ring-inset ring-teal-PRIMARY hover:bg-neutral-beige-gray focus-visible:bg-neutral-beige-gray focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-teal-PRIMARY",
     // danger: not in Figma — extension for SSO destructive actions (logout/delete).
     // Uses red-600 (not red-PRIMARY) so white text meets WCAG AA (>=4.5:1).
     danger:
@@ -32,8 +42,38 @@ const variantStyles = {
   },
 } as const
 
-type ButtonVariant = keyof typeof variantStyles
-type ButtonTheme<V extends ButtonVariant> = keyof (typeof variantStyles)[V]
+const iconButtonBase =
+  "inline-flex shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-teal-700 transition-colors disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-teal-PRIMARY"
+
+const iconButtonSize = {
+  // 32×32, rounded square: row actions (ReorderableList), close (Dialog, Toast).
+  md: "size-32 rounded-8 hover:bg-bg-light-beige aria-disabled:hover:bg-transparent",
+  // 24×24 (the WCAG 2.5.8 minimum), round: inside a pill (Combobox chips).
+  sm: "size-24 rounded-full hover:bg-bg-light-beige",
+} as const
+
+/**
+ * The square/round icon-only button used across the package — one shell, so
+ * sizes, hover, disabled and focus match wherever an × or a chevron is a
+ * button. Callers add colour overrides for their surface via cn() (Dialog's
+ * muted ×, Toast's on teal). Internal, like buttonClasses.
+ */
+export function iconButtonClasses(size: keyof typeof iconButtonSize = "md") {
+  return cn(iconButtonBase, iconButtonSize[size])
+}
+
+export type ButtonVariant = keyof typeof variantStyles
+export type ButtonTheme<V extends ButtonVariant> = keyof (typeof variantStyles)[V]
+
+/**
+ * The class list for a variant/theme pair, for controls that must look like a
+ * Button but render their own element (e.g. Menu's trigger, which needs ARIA
+ * attributes and a ref Button does not take). Internal; not in the barrel.
+ */
+export function buttonClasses<V extends ButtonVariant>(variant: V, theme: ButtonTheme<V>) {
+  const styles = variantStyles[variant]
+  return cn(baseStyles, styles.base, styles[theme] as string)
+}
 
 type ButtonProps<V extends ButtonVariant = "primary"> = {
   id?: string
@@ -80,9 +120,7 @@ export function Button<V extends ButtonVariant = "primary">({
   onClick,
   children,
 }: ButtonProps<V>) {
-  const styles = variantStyles[variant]
-  const themeClass = styles[theme] as string
-  const classes = cn(baseStyles, styles.base, themeClass, className)
+  const classes = cn(buttonClasses(variant, theme), className)
   const isInert = disabled || isLoading
 
   // Render as a link unless inert — a disabled <a> can't be inert, so fall

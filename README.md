@@ -18,19 +18,20 @@ src/
 
 ## What's in it
 
-16 primitives, all framework-agnostic:
+28 primitives, all framework-agnostic:
 
 | Group | Components |
 | --- | --- |
 | Layout | `Container`, `Card` |
-| Actions & nav | `Button`, `Link` |
-| Form | `Field`, `Label`, `ValidationMessage`, `Input`, `Checkbox`, `Select` |
-| Data | `Badge`, `Tag`, `Table` |
-| Disclosure & feedback | `Accordion`, `Tabs`, `Dialog`, `Toast` |
+| Actions & nav | `Button`, `Link`, `Menu`, `Pagination` |
+| Form | `Field`, `Label`, `ValidationMessage`, `Input`, `Textarea`, `Checkbox`, `Select`, `FileUpload`, `Combobox`, `MultiCombobox` |
+| Data | `Badge`, `Tag`, `Table`, `DescriptionList`, `ReorderableList` |
+| Disclosure & feedback | `Accordion`, `Tabs`, `Dialog`, `Toast`, `LiveRegion`, `Spinner`, `LoadingOverlay` |
 | Icons | 13 brand icons from `Icons` |
 
-Also exported: `cn`, and the `LinkProps` / `AnchorLike` / `TableColumn` /
-`TabItem` / `AccordionEntry` types.
+Also exported: `cn`, `fieldDescribedBy`, `useAnnouncer`, and the `LinkProps` / `AnchorLike` / `TableColumn` /
+`TabItem` / `AccordionEntry` / `ComboboxOption` / `ComboboxLabels` /
+`ComboboxProps` / `MultiComboboxProps` / `PaginationLabels` / `FileUploadLabels` / `DescriptionItem` / `ReorderableListLabels` / `MenuItem` / `MenuTrigger` / `ToastTone` / `ToastPosition` / `Announcement` types.
 
 There is no provider to mount and nothing to configure globally. Components
 take what they need as props.
@@ -137,11 +138,420 @@ six exports, a mandatory app-root wrapper, a `"use client"` boundary on `Link`
 itself, and implicit action-at-a-distance — to save an app from writing the
 wrapper above once. Props won.
 
+### Field descriptions: `fieldDescribedBy`
+
+Given `htmlFor`, `Field` gives its hint the id `${htmlFor}-hint` and its error
+`${htmlFor}-error`. The error id sits on Field's always-mounted live region,
+so it exists (empty) before any error does. That lets the control carry one
+fixed value:
+
+```tsx
+<Field label="Email" htmlFor="email" hint="We never share it." error={error}>
+  <Input id="email" invalid={!!error} aria-describedby={fieldDescribedBy("email")} />
+</Field>
+```
+
+`fieldDescribedBy("email")` is `"email-hint email-error"`. While valid, the
+description is the hint; once there is an error it is the error (the hint is
+hidden, and a missing id is simply ignored). Field does not inject the
+attribute into its child — the control still says what describes it.
+
+### Textarea
+
+The `Input` shell, multi-line. `invalid` sets `aria-invalid`; `rows`
+(default 4) and every native textarea attribute pass through.
+
+```tsx
+<Field label="自我介紹" htmlFor="bio" hint="最多 200 字">
+  <Textarea id="bio" aria-describedby={fieldDescribedBy("bio")} maxLength={200} autoResize />
+</Field>
+```
+
+`autoResize` grows the field with its content using CSS `field-sizing:
+content`, so `Textarea` stays a Server Component. Browsers without
+`field-sizing` (Firefox, at the time of writing) keep the fixed `rows` height
+and the manual resize handle.
+
+### FileUpload
+
+```tsx
+const [cover, setCover] = useState<File | string | null>(existingUrl)
+
+<Field label="封面圖片" htmlFor="cover">
+  <FileUpload
+    id="cover"
+    accept="image/*"
+    preview
+    value={cover}               // a new File, an existing URL, or null
+    onChange={setCover}
+    onRemove={() => setCover(null)}
+  />
+</Field>
+```
+
+- The control is a real `<button>`; the `<input type="file">` behind it has
+  `tabIndex={-1}` and `aria-hidden`. Paired with a `<label>`, the button's name
+  keeps both: 「封面圖片，選擇圖片」.
+- The input is reset after every pick, so choosing the same file twice still
+  fires `onChange`.
+- The chosen file name, removal, and errors are announced through a live
+  region that is always mounted. Removing hands focus back to the trigger.
+- The trigger's description is the current file name (or 未設定), so after a
+  pick it reads 「封面圖片，重新選取」 + 「cover.jpg」, not just 重新選取. The
+  remove button is named with the field too — 「封面圖片，刪除圖片」 — so two
+  uploaders on one page are distinguishable. The label text is re-read on
+  every render, so a label that changes later does not leave stale names.
+- A URL that fails to load shows 「圖片無法載入」 — the value is still set, so
+  the name and actions stay rather than falling back to 「未設定」.
+- Drag and drop is a shortcut, never the only way. Dropped files are checked
+  against `accept`, since only the picker enforces it natively.
+- Strings are in `labels`; set `choose`/`remove` to 「選擇檔案」/「刪除檔案」
+  for non-image uploads.
+
+### DescriptionList
+
+Read-only field/value pairs, on a semantic `<dl>`/`<dt>`/`<dd>`:
+
+```tsx
+<DescriptionList
+  items={[
+    { term: "姓名", description: "王小明" },
+    { term: "帳號身分", description: <Badge>志工</Badge> },
+  ]}
+/>
+```
+
+Stacked on mobile; two columns from tablet up, with a fixed 16rem term column
+so values line up. No state, so it renders on the server.
+
+### Spinner and LoadingOverlay
+
+```tsx
+<Spinner label="載入中" size="sm" />          // role="status", label visually hidden
+
+<LoadingOverlay active={saving} label="資料處理中">
+  <Card>…</Card>                               // inert while active
+</LoadingOverlay>
+
+<LoadingOverlay active={exporting} fullPage label="匯出中" />
+```
+
+- `Spinner` holds still under `prefers-reduced-motion`. Its `role="status"`
+  is mounted together with its label, which screen readers often do not
+  announce — fine for "something is loading here", not for "tell me when it
+  starts and ends". That is LoadingOverlay's job.
+- `LoadingOverlay` makes the covered content `inert` (not clickable,
+  focusable, or readable) and sets `aria-busy`. If focus was inside, it moves
+  to the overlay panel and returns afterwards. An always-mounted live region
+  announces `label` on start and `doneLabel` (「載入完畢」) on finish.
+- `fullPage` renders into `<body>` via a portal and sets `inert` on every other
+  child of `<body>`, restoring each afterwards. Started while a modal `Dialog`
+  is open, it renders into that dialog instead (in `<body>` it would sit behind
+  the modal) and makes the dialog's own content inert.
+
+### ReorderableList
+
+```tsx
+<ReorderableList
+  label="常見問題排序"
+  items={questions}
+  getKey={(q) => q.id}
+  getLabel={(q) => q.title}
+  onChange={setQuestions}
+/>
+```
+
+- Every row has 上移 / 下移 / 移除 icon buttons named with the item —
+  「上移：WCAG 2.2 新增了哪些準則」. There is no drag, so nothing depends on it.
+- After a move, focus stays on the moved item's same button. A live region
+  says 「已上移，第 2／4 項」, or 「已上移，已抵達第一項」 at an end.
+- At the ends 上移/下移 are `aria-disabled` rather than `disabled`, so the item
+  just moved to the top keeps focus; pressing it there only says 已抵達第一項.
+- Removing moves focus to the next row's 移除, else the previous row's, else
+  the empty state, and announces 「已移除 …」.
+- The moved row's highlight fades, and simply appears under reduced motion.
+- `renderItem` for richer rows; `removable={false}` to hide 移除; strings in
+  `labels`.
+
+Two layouts, same behaviour and announcements:
+
+| `layout` | Structure | Tab stops | Use when |
+| --- | --- | --- | --- |
+| `"list"` (default) | `<ol>`, buttons in each row | 3 per row | Short lists; everyone knows how to read a list |
+| `"grid"` | APG layout grid (`role="grid"` / `row` / `gridcell`) | 1 for the whole list | Long lists, where 3 × rows Tab stops is a chore |
+
+`label` is required for `layout="grid"` (the type enforces it): ARIA requires
+a grid to be named. In the grid, ←/→ move within a row, ↑/↓ between rows in the same column,
+Home/End to the row's ends, Ctrl+Home/End to the first/last row. The single
+Tab stop is the last cell you were on, and it follows the item: after 上移 you
+are still on that item's 上移, one row up. The trade-off is that it is read as
+a grid rather than a list, and screen reader users need to know grid
+navigation (they are switched to focus mode inside it).
+
+### Menu
+
+A menu button for actions or navigation — 更多操作, 帳號選單. Not a form
+control: to pick a value, use `Select` or `Combobox`.
+
+```tsx
+<Menu
+  label="更多操作"
+  trigger={{ variant: "small", theme: "greenStroke" }}
+  placement="bottom-end"
+  items={[
+    { key: "edit", label: "編輯活動", onSelect: edit },
+    { key: "report", label: "下載報名名單", href: "/events/42/report.csv", as: NextLink },
+    { key: "archive", label: "封存", onSelect: archive, disabled: true },
+    { type: "separator" },
+    { key: "delete", label: "刪除活動", onSelect: confirmDelete, tone: "danger" },
+  ]}
+/>
+
+// Icon-only: the type requires aria-label. A trigger that shows `label` cannot
+// take one — it would replace the visible name (WCAG 2.5.3).
+<Menu label="帳號選單" trigger={{ icon: <MenuIcon />, iconOnly: true, "aria-label": "帳號選單" }} items={…} />
+```
+
+- APG Menu Button: `aria-haspopup="menu"`, `aria-expanded`, `aria-controls`;
+  `role="menu"` / `menuitem` (an `<a>` for `href` items) / `separator`.
+- Enter, Space or ↓ open on the first item, ↑ on the last. Inside: ↑/↓ wrap,
+  Home/End, type to jump (keys within 500ms build one prefix), Enter/Space
+  activate and close, Esc closes back to the trigger, Tab closes and moves on.
+  Clicking outside closes. Focus is not trapped.
+- After an action, focus returns to the trigger — unless the action moved it
+  (e.g. opened a Dialog).
+- `disabled` items are `aria-disabled`: reachable and announced, but inert.
+- `tone: "danger"` is red-600 text: 6.13:1 on white, 4.95:1 on the focus fill.
+- The trigger takes any Button `variant`/`theme`. The popup flips to the
+  trigger's other edge when `placement` would overflow the viewport.
+
+### Announcements: `LiveRegion` and `useAnnouncer`
+
+For telling screen reader users something that has no other voice — 已儲存,
+已複製連結:
+
+```tsx
+const { message, say } = useAnnouncer()
+
+<Button onClick={async () => { await copyLink(); say("已複製連結") }}>複製連結</Button>
+<LiveRegion message={message} />            // render it always, unconditionally
+```
+
+- The region is mounted up front and empty; `say()` only changes its text. A
+  `role="status"`/`"alert"` inserted together with its message is announced
+  unreliably, which is why nothing in this package does that any more.
+- The text is cleared after 7s (`useAnnouncer({ clearAfter })`, React Aria's
+  default). The region is visually hidden, so its text duplicates something
+  on screen; left in place, someone browsing with the virtual cursor would
+  meet it twice. Clearing is silent and does not cut off an announcement.
+- The same text twice in a row is still announced.
+- `politeness="assertive"` (`role="alert"`) interrupts — keep it for errors.
+
+Combobox, FileUpload, ReorderableList, LoadingOverlay and Toast announce
+through it. Visible live text — Field's error, Pagination's status line — is
+the content itself, not a copy, so it is not cleared.
+
+### Toasts: `<Toast open>`
+
+One component per notification, like `Dialog`: put it in the JSX and flip
+`open`. No list to manage and no provider.
+
+```tsx
+const [saved, setSaved] = useState(false)
+
+<Button onClick={async () => { await save(); setSaved(true) }}>儲存</Button>
+<Toast
+  open={saved}
+  onClose={() => setSaved(false)}   // close button, and on timeout
+  tone="success"
+  title="已儲存"
+  message="你的變更已儲存。"
+  // optional:
+  autoHide={5000}                   // ms; null = until closed. Danger defaults to null.
+  position="top-center"             // also top-right, bottom-center, bottom-right
+  max={3}                           // shown at once per position; later ones wait
+/>
+```
+
+- Open toasts with the same `position` share one stack in `<body>` (created
+  with the first, removed with the last), in the order they opened. While a
+  modal `Dialog` is open the stack moves inside it — `showModal()` makes
+  everything outside inert, so a toast raised from the dialog's form would
+  otherwise be unseeable and unclosable — and back out when it closes. Past
+  `max`, a toast waits — not shown, not announced, timer stopped — until an
+  earlier one closes.
+- Each `<Toast open>` keeps its own `LiveRegion` mounted for as long as the
+  component is, open or not, and writes its text there when it appears:
+  assertive for `danger`, polite otherwise. The card itself has no role, so
+  nothing depends on a region inserted together with its text, and the region
+  text clears after 7s so it does not linger beside the card. Keep the
+  component mounted and toggle `open` — don't render it conditionally, or its
+  region is created at the same moment as its text.
+- The tone is not shown by colour alone: each has its own icon shape (circle-i,
+  circle-✓, triangle-!, octagon-!), and its name is spoken before the title —
+  visually hidden on the card and part of the announcement: 「錯誤：儲存失敗，
+  請檢查網路連線後再試一次。」. Override the names with `toneLabels`.
+- Danger toasts stay until closed unless given an `autoHide`; an error should
+  not vanish unread.
+- Timers pause while the pointer is over the stack or focus is inside it.
+- Each position's stack is a region landmark: 「通知」 for `top-center`, and
+  「通知（右上）」 etc. for the others, so two open at once are told apart
+  (`regionLabel` to override).
+- The close button is 「關閉通知」 (`closeLabel`). Closing moves focus to the
+  next toast, or back to where it was before entering the stack.
+- Without `open`, `Toast` is a static card rendered in place: no timer, no
+  announcement — for content that is on the page from the start.
+
+### Badge tones
+
+`tone`: `brand` (default), `muted`, and the status tones `success`,
+`warning`, `danger`.
+
+```tsx
+<Badge tone="success">已通過</Badge>
+<Badge tone="warning">審核中</Badge>
+<Badge tone="danger">已退件</Badge>
+```
+
+The status tones are outlined rather than filled, so their text sits on the
+page surface, and each text colour clears 4.5:1 on all three brand surfaces:
+
+| Tone | Text | White | Off-white | Beige |
+| --- | --- | --- | --- | --- |
+| success | `green-800` | 5.98 | 5.55 | 4.83 |
+| warning | `orange-800` (new) | 5.64 | 5.24 | 4.55 |
+| danger | `red-600` | 6.13 | 5.69 | 4.95 |
+
+A tinted fill was tried first and fails: even an 8% tint over beige drops the
+three to 4.36 / 4.14 / 4.43. `orange-800: #985700` extends the Figma ramp for
+the same reason `green-800` does — `orange-700` is 3.54 on beige — and is the
+lightest step of that hue that passes everywhere (see `tokens.css`).
+
+### `className`, `name`, and native props
+
+Every component takes `className`, merged with `cn()`. Where it lands:
+
+- **A single native control** — `Input`, `Textarea`, `Select`, `Checkbox` —
+  puts it on that control, and spreads every other native attribute onto it
+  too (`name`, `required`, `onBlur`, …).
+- **A composite widget** — `Combobox`, `FileUpload`, `Pagination`, `Menu`,
+  `ReorderableList`, … — puts it on its outermost element. These take an
+  explicit list of props rather than spreading, because their parts are not
+  one element; the form-facing ones still cover what a form needs: `id`,
+  `name`, `onFocus`/`onBlur`, `invalid`, `disabled`, and `aria-label` /
+  `aria-labelledby` / `aria-describedby`.
+
+With `name`, `Combobox`/`MultiCombobox` submit the selected option values
+through hidden inputs (one per option for the multi version, like a multiple
+`<select>`), and `FileUpload` submits the current file from its hidden file
+input — including a dropped one.
+
+### Overriding strings: `labels`
+
+Components with more than one user-facing string take a `labels` object;
+pass only the keys you want to change. Every component uses the same scheme:
+
+- plain keys for text that is shown — `empty`, `loading`, `choose`;
+- functions where an item's name is part of the text —
+  ``remove: (name) => `移除 ${name}` ``, ``up: (name) => `上移：${name}` ``;
+- past participles for what is announced after an action — `selected`,
+  `removed`, `created`.
+
+Composed names are functions too, so word order and punctuation are yours:
+FileUpload's ``named: (field, action) => `${field}，${action}` ``. A component
+with a single string takes it as its own prop instead, like Dialog's
+`closeLabel`.
+
+### Pagination
+
+Two modes. With `onPageChange` it renders buttons:
+
+```tsx
+<Pagination page={page} pageCount={20} total={195} onPageChange={setPage} />
+```
+
+With `href` it renders links, and works in a Server Component (no
+`"use client"`, no hooks). `as` takes the router link, as on `Link`:
+
+```tsx
+<Pagination page={page} pageCount={20} href={(p) => `/articles?page=${p}`} as={NextLink} />
+```
+
+- `<nav aria-label="分頁">` (override with `label`); the current page has
+  `aria-current="page"`; page buttons are named 「第 3 頁」.
+- At the ends, previous/next stop working without dropping focus. In button
+  mode they are `disabled`, and reaching an end moves focus to the new current
+  page. In link mode they stay the same `<a>`, `aria-disabled` and pointing at
+  the current page — so with client-side routing, focus stays on 下一頁 after
+  it takes you to the last page. (Swapping it for a disabled `<button>`, as an
+  earlier version did, replaced the focused element and dropped focus to
+  `<body>`.)
+- The status line 「第 2／10 頁，共 195 筆」 is visible and is a live region
+  (`role="status"`), so page changes are announced. `total` is optional.
+- Ellipses keep a fixed number of slots — first, last, current ±
+  `siblingCount` — whatever the page count.
+- Strings are in `labels` (`previous`, `next`, `page`, `status`).
+
+### Searchable selects: `Combobox` and `MultiCombobox`
+
+For option sets too long for `Select`. Both are controlled: the caller owns
+`value` and `options`.
+
+```tsx
+const [topics, setTopics] = useState<ComboboxOption[]>([])
+
+<Field label="主題標籤" htmlFor="topics" error={error}>
+  <MultiCombobox
+    id="topics"
+    options={options}
+    value={topics}
+    onChange={setTopics}
+    creatable
+    onCreate={async (label) => {
+      const created = await api.createTopic(label)   // caller adds it to options + value
+      setOptions((o) => [...o, created])
+      setTopics((t) => [...t, created])
+    }}
+    invalid={!!error}
+    aria-describedby={fieldDescribedBy("topics")}
+  />
+</Field>
+```
+
+`<Combobox>` takes the same props with `value: ComboboxOption | null`.
+
+- Keyboard follows the APG combobox pattern: ↑/↓ open and move (wrapping),
+  Enter commits, Esc closes and a second Esc clears. Home/End and ←/→ are
+  text-editing keys: with an option highlighted they clear the highlight (the
+  popup stays open) and move the caret, rather than jumping through the list.
+  Enter is ignored during IME composition, so committing a 注音/倉頡
+  candidate never selects an option.
+- Nothing is pre-selected: the first match is highlighted but not written into
+  the input.
+- Clicking the input opens the popup and never closes it — a click inside
+  the text is usually placing the caret. Esc or a click outside closes.
+- The match count is announced through a live region that is always mounted,
+  once typing pauses (500ms) and never mid-IME-composition. Actions are
+  announced too — 「已選取 WCAG」, 「已取消選取 WCAG」, 「已移除 WCAG」,
+  「已新增並選取「X」」 (or 「已新增「X」」 when the caller did not select it)
+  — and hold the region until the user types again.
+- In the multi version, choosing a selected option again deselects it, and
+  each selected item has a named remove button (「移除 WCAG」). Removing one
+  moves focus to the next item, or back to the input.
+- `onCreate` only reports the text. Adding the new option to `options` and
+  `value` is the caller's job, since it usually needs a server id first. If the
+  promise rejects, the typed text stays so the user can retry.
+- For server-side search, pass `filter={() => true}` and update `options`
+  (with `loading`) as the query changes.
+- Default strings are Traditional Chinese; override any of them through
+  `labels` (see `ComboboxLabels`).
+
 ### Server Components
 
-The build preserves the module graph, so `"use client"` stays on just the two
-files that actually need it — `Dialog` and `Tabs`, the only components with
-state. Everything else, including `Link` and `Button`, renders on the server.
+The build preserves the module graph, so `"use client"` stays on just the
+files that actually need it — `Dialog`, `Tabs`, `Combobox`, `FileUpload`,
+`LoadingOverlay`, `ReorderableList`, `Menu`, `Toast`, and
+`LiveRegion`, the only components with state. Everything else, including `Link` and `Button`, renders on the server.
 Importing `Button` does not drag `Table` into the bundle.
 
 ESM only. Every current bundler and Node ≥ 18 handles it; there is no CJS build.
@@ -255,7 +665,46 @@ What the story tests actually pin down, beyond "it renders":
 - **Accordion** — expand/collapse, and items open independently.
 - **Checkbox** — clicking the label text toggles the box, which only works if
   the `htmlFor`/`id` pairing holds.
-- **Field** — the error message lands in an always-mounted `aria-live` region
+- **Combobox** — APG wiring (`aria-controls`, `aria-activedescendant`), no
+  pre-selection, ↑/↓ wrap, Home/End and ←/→ clearing the highlight and moving
+  the caret, double Esc, Enter ignored during IME
+  composition, create, multi toggle, focus after removing an item, and the
+  persistent result-count live region.
+- **FileUpload** — the trigger is a named `<button>` and the native input is
+  hidden from the tab order and a11y tree; re-selecting twice (including the
+  same file); an existing URL shows preview and 刪除; a broken image shows an
+  error, not 未設定; focus after removing; drop, and drop outside `accept`.
+- **Spinner** — the label reaches the status role, and the reduced-motion
+  rule really sets `animation: none` on the ring.
+- **LoadingOverlay** — covered content is inert and `aria-busy`, content
+  outside is not; focus moves to the panel and back; start and 載入完畢 are
+  announced; `fullPage` inerts the rest of `<body>` and restores it.
+- **ReorderableList** — `<ol>` semantics and item-named buttons;
+  `aria-disabled` at the ends; focus kept through moves and an end;
+  announcements; focus after removing the middle, last, and only row. Grid
+  layout: one Tab stop, arrow / Home / End / Ctrl+Home / Ctrl+End movement
+  without wrapping, and the Tab stop following the moved item.
+- **Menu** — trigger and menu wiring; Enter/Space/↓/↑ opening; wrap,
+  Home/End and typeahead; activation returns focus; disabled items are
+  reachable and inert; Esc, Tab and outside-click close; the viewport flip;
+  icon-only naming.
+- **Toast** — static: the close button and `closeLabel`, and no tone gives
+  the card a live-region role. `open`: each toast's region exists (empty)
+  before it opens, danger goes assertive and the rest polite; the stack
+  appears with the first toast and goes with the last; `max` holds later
+  toasts back, unannounced, until one closes; auto-hide pauses on hover and
+  on focus; danger stays; focus after closing.
+- **Badge** — every tone on all three brand surfaces, with the contrast ratio
+  computed from the browser's colours (so a failure names the tone, the
+  surface, and the ratio), on top of axe.
+- **LiveRegion** — mounted empty, `say()` fills it, the same text twice is a
+  new node (announced again), and the text clears after `clearAfter`.
+- **Pagination** — landmark name, `aria-current`, real `disabled` at both
+  ends in button mode with focus handed to the current page, the live status
+  line, ellipsis slots at the start / middle / end, link mode with `as`, and
+  focus kept on an `aria-disabled` 下一頁 through a client-side navigation.
+- **Field** — `fieldDescribedBy` gives the hint while valid and the error
+  once invalid; the error message lands in an always-mounted `aria-live` region
   and does not also carry `role="alert"` (which would announce twice); `error`
   replaces `hint` rather than stacking.
 
@@ -268,7 +717,7 @@ Two conventions worth knowing before adding tests:
 - Query summaries and roles, not free text. A question and its answer can share
   a phrase, which makes `getByText` ambiguous the moment an item expands.
 
-### Two real bugs this found immediately
+### Real bugs this found
 
 Turning axe on over the inherited stories failed the build on two counts, both
 now fixed:
@@ -284,9 +733,53 @@ now fixed:
 2. **`Select`'s own stories shipped an unnamed control** (axe `select-name`).
    Stories are what people copy, so they now carry a real label.
 
+A third turned up later. **`Badge tone="muted"` failed WCAG AA** at 4.42
+(`neutral-dark-gray` on `neutral-very-light-gray`): Badge had no stories, so
+axe never saw it. It now uses `teal-200` (4.75). Found when the status tones
+were added with a story that renders every tone on every surface.
+
 `Storybook` also logs `"use client" in "src/lib/config.tsx" was ignored` when
 building the static Storybook. That is expected: Storybook bundles an SPA where
 the directive is meaningless. It still matters in `dist/`, which is not bundled.
+
+Focus indicators follow two rules (WCAG 1.4.11, 3:1 against what they sit
+on — the old orange ring was 1.6–2.0:1 on the brand's light surfaces):
+
+- **On light surfaces** (white, off-white, beige — almost everything): a
+  `teal-PRIMARY` outline, 2px wide, 2px outside the control —
+  `focus-visible:outline-2 focus-visible:outline-offset-2
+  focus-visible:outline-solid focus-visible:outline-teal-PRIMARY`. 8.9–11:1 on
+  the surfaces; the gap keeps it distinct from teal fills and teal input
+  borders. `outline-solid` is needed because `outline-hidden` elsewhere on the
+  element sets the style to none.
+- **On an invalid field** (`invalid`): the outline turns `red-600` — 6.13:1
+  on white, 5.69 on off-white, 4.95 on beige — so the error is still visible
+  while the field has focus. Input, Textarea, Select and Combobox share one
+  input shell (`inputStyles`/`invalidStyles` in `Input.tsx`), so this holds
+  for all of them; FileUpload's trigger follows suit.
+- **On teal surfaces, or inset in a filled button**: `orange-PRIMARY`, 5.5–6.3:1
+  on teal. Filled Buttons draw their ring inset, measured against their own
+  fill, so they work on any page surface.
+
+Shared building blocks, so the same thing looks the same everywhere:
+
+- **Shells**: `inputStyles`/`invalidStyles` (Input.tsx) for text-like fields;
+  `buttonClasses(variant, theme)` for anything that looks like a Button;
+  `iconButtonClasses("md" | "sm")` for icon-only buttons — 32px rounded
+  square, or 24px round inside a pill. Internal; not in the barrel.
+- **Elevation tokens** (tokens.css): `shadow-popup` (Combobox list, Menu,
+  loading panel), `shadow-toast`, `shadow-modal` (Dialog), and `shadow-marker`
+  for the active row's inset teal bar (combobox option, menu item).
+- **Stacking**: popups that hang off a control are `z-20`; page-level layers
+  (the toast stack, a full-page overlay) are `z-50`.
+- **Disabled**: `opacity-50`, whether by `disabled` or `aria-disabled`.
+
+Focus styles use `outline-hidden`, never `outline-none`. In Tailwind v4,
+`outline-none` sets `outline-style: none`, and every focus indicator here is a
+ring or box-shadow — which Windows High Contrast (forced colors) removes, so
+focus vanished entirely there. `outline-hidden` is a transparent outline that
+forced-colors mode paints. Anything marked without DOM focus (the combobox's
+highlighted option) also needs a `forced-colors:outline-*`.
 
 Relative imports in `src/` carry explicit `.js` extensions. That is what makes
 the `bundle: false` output valid Node ESM; TypeScript resolves them back to the

@@ -32,6 +32,13 @@
   --color-orange-500: #e68f00;
   --color-orange-600: #cc7a00;
   --color-orange-700: #b26600;
+  /* Extends the Figma ramp, which stops at 700 — same reasoning as
+     green-800. orange-700 is 4.38 on white, 4.07 on off-white and 3.54 on
+     beige, so warning *text* in it fails WCAG AA on every brand surface.
+     This is the lightest step of the same hue that passes on all three —
+     white 5.64, off-white 5.24, beige 4.55. Use it for orange text (Badge
+     warning); keep the lighter steps for fills. */
+  --color-orange-800: #985700;
   --color-bg-light-off-white: #f6f7f1;
   --color-bg-light-beige: #eee6d8;
   --color-bg-warm-gray: #dad5c2;
@@ -107,6 +114,15 @@
   --text-9xl: 4.8rem;
   --text-10xl: 5.2rem;
   --text-11xl: 6.4rem;
+
+  /* Elevation. Popups hang off a control (Combobox list, Menu, the loading
+     panel); a toast floats over the page; a modal sits above everything.
+     `marker` is the inset bar that marks the active row in a list (combobox
+     option, menu item) — teal-PRIMARY, 10.5:1 on its beige fill. */
+  --shadow-popup: 0 0.8rem 2.4rem rgb(16 36 42 / 0.16);
+  --shadow-toast: 0 0.8rem 2.4rem rgb(16 36 42 / 0.24);
+  --shadow-modal: 0 1.6rem 4rem rgb(16 36 42 / 0.25);
+  --shadow-marker: inset 0.4rem 0 0 var(--color-teal-PRIMARY);
 
   --radius-8: 0.8rem;
   --radius-16: 1.6rem;
